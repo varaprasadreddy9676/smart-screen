@@ -89,12 +89,11 @@ export function LaunchWindow() {
   };
 
   const openVideoFile = async () => {
+    if (!window.electronAPI) return;
     const result = await window.electronAPI.openVideoFilePicker();
-    
-    if (result.canceled) {
-      return;
-    }
-    
+
+    if (result.canceled) return;
+
     if (result.success && result.path) {
       await window.electronAPI.setCurrentVideoPath(result.path);
       await window.electronAPI.switchToEditor();

@@ -1,14 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    hudOverlayHide: () => {
-      ipcRenderer.send('hud-overlay-hide');
-    },
-    hudOverlayClose: () => {
-      ipcRenderer.send('hud-overlay-close');
-    },
+  hudOverlayHide: () => {
+    ipcRenderer.send('hud-overlay-hide');
+  },
+  hudOverlayClose: () => {
+    ipcRenderer.send('hud-overlay-close');
+  },
   getAssetBasePath: async () => {
-    // ask main process for the correct base path (production vs dev)
     return await ipcRenderer.invoke('get-asset-base-path')
   },
   getSources: async (opts: Electron.SourcesOptions) => {
@@ -26,11 +25,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSelectedSource: () => {
     return ipcRenderer.invoke('get-selected-source')
   },
-
   storeRecordedVideo: (videoData: ArrayBuffer, fileName: string) => {
     return ipcRenderer.invoke('store-recorded-video', videoData, fileName)
   },
-
   getRecordedVideoPath: () => {
     return ipcRenderer.invoke('get-recorded-video-path')
   },
@@ -99,7 +96,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   revealInFolder: (filePath: string) => {
     return ipcRenderer.invoke('reveal-in-folder', filePath)
   },
-})
   getShortcuts: () => {
     return ipcRenderer.invoke('get-shortcuts')
   },

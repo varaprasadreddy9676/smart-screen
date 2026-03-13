@@ -4,7 +4,7 @@
  * Analyses cursor telemetry and auto-generates zoom regions + click highlights.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Sparkles, Zap, MousePointerClick, Clock, ListOrdered, RefreshCw, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ZoomRegion, AnnotationRegion, CursorTelemetryPoint } from "@/components/video-editor/types";
@@ -44,6 +44,7 @@ export function SmartDemoPanel({
   const [silences, setSilences] = useState<SilenceSegment[]>([]);
   const [applied, setApplied] = useState(false);
   const [trimApplied, setTrimApplied] = useState(false);
+  const autoModeFiredRef = useRef(false);
 
   const runAnalysis = useCallback(() => {
     if (cursorTelemetry.length === 0) {
@@ -70,18 +71,19 @@ export function SmartDemoPanel({
       setClickCount(highlights.length);
       setSilences(trimSuggestions);
       setState("done");
-
-      // If auto mode, apply immediately
-      if (isAutoMode) {
-        onApplyZoomRegions(zoomRegions);
-        onApplyAnnotations(highlights);
-        setApplied(true);
-      }
     } catch (err) {
       console.error("Smart demo analysis failed:", err);
       setState("error");
     }
-  }, [cursorTelemetry, duration, isAutoMode, onApplyZoomRegions, onApplyAnnotations]);
+  }, [cursorTelemetry, duration]);
+
+  // Auto-run once when isAutoMode is true and telemetry is ready
+  useEffect(() => {
+    if (isAutoMode && !autoModeFiredRef.current && cursorTelemetry.length > 0) {
+      autoModeFiredRef.current = true;
+      runAnalysis();
+    }
+  }, [isAutoMode, cursorTelemetry, runAnalysis]);
 
   const handleApply = useCallback(() => {
     if (cursorTelemetry.length === 0) return;
