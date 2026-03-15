@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenScreen Smart Demo — Record Raw. Ship Polished.</title>
+  <meta name="description" content="Smart Demo analysis, native macOS telemetry, AI-assisted captions, and a timeline editor that actually understands your recording. Works fully offline." />
+  <meta property="og:title" content="OpenScreen Smart Demo" />
+  <meta property="og:description" content="From raw recording to polished walkthrough — without the guesswork." />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #07070e;
+      --bg-1:        #0d0d1a;
+      --bg-2:        #111120;
+      --border:      rgba(255,255,255,0.07);
+      --border-hi:   rgba(255,255,255,0.13);
+      --text:        #eeeef5;
+      --text-2:      #8888ab;
+      --text-3:      #404058;
+      --green:       #34b27b;
+      --green-dim:   rgba(52,178,123,0.10);
+      --green-glow:  rgba(52,178,123,0.22);
+      --cyan:        #22d3ee;
+      --cyan-dim:    rgba(34,211,238,0.10);
+      --purple:      #a855f7;
+      --purple-dim:  rgba(168,85,247,0.10);
+      --amber:       #f59e0b;
+      --red:         #ef4444;
+      --r:           12px;
+      --r-lg:        20px;
+      --font:        'Inter', system-ui, -apple-system, sans-serif;
+      --mono:        'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── UTILITIES ──────────────────────────────── */
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+
+    .tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--green);
+      display: block;
+      margin-bottom: 14px;
+    }
+
+    h2 {
+      font-size: clamp(28px, 3.5vw, 44px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    .sub {
+      font-size: 16px;
+      color: var(--text-2);
+      line-height: 1.75;
+      max-width: 520px;
+    }
+
+    .gt {
+      background: linear-gradient(120deg, var(--green) 20%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Reveal on scroll */
+    [data-r] {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1),
+                  transform 0.65s cubic-bezier(0.16,1,0.3,1);
+    }
+    [data-r].in { opacity: 1; transform: none; }
+    [data-r][data-d="1"] { transition-delay: 0.07s; }
+    [data-r][data-d="2"] { transition-delay: 0.14s; }
+    [data-r][data-d="3"] { transition-delay: 0.21s; }
+    [data-r][data-d="4"] { transition-delay: 0.28s; }
+
+    /* ── NAV ────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      background: rgba(7,7,14,0.85);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .nav-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-right { display: flex; align-items: center; gap: 4px; }
+
+    .nav-a {
+      padding: 6px 13px;
+      font-size: 13px;
+      color: var(--text-2);
+      text-decoration: none;
+      border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-a:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+    .nav-gh {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      margin-left: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid var(--border-hi);
+      border-radius: 9px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .nav-gh:hover { border-color: var(--green); background: var(--green-dim); }
+
+    /* ── HERO ───────────────────────────────────── */
+    #hero {
+      position: relative;
+      overflow: hidden;
+      padding: 108px 28px 88px;
+    }
+
+    /* Dot-grid texture */
+    #hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px);
+      background-size: 30px 30px;
+      mask-image: radial-gradient(ellipse 75% 65% at 50% 0%, black 30%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 0%, black 30%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .hero-orb {
+      position: absolute;
+      width: 1000px;
+      height: 440px;
+      top: -180px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse at center, rgba(52,178,123,0.11) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 72px;
+      align-items: center;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 13px 5px 9px;
+      border: 1px solid rgba(52,178,123,0.25);
+      background: rgba(52,178,123,0.08);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--green);
+      margin-bottom: 26px;
+    }
+
+    .pulse {
+      width: 7px; height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: p 2.4s ease-in-out infinite;
+    }
+    @keyframes p {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.72); }
+    }
+
+    .hero-title {
+      font-size: clamp(42px, 5.5vw, 70px);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.04;
+      margin-bottom: 22px;
+    }
+
+    .hero-desc {
+      font-size: 17px;
+      color: var(--text-2);
+      line-height: 1.8;
+      max-width: 440px;
+      margin-bottom: 36px;
+    }
+
+    .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 44px; }
+
+    .btn-p {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      background: var(--green);
+      color: #000;
+      border-radius: 11px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      letter-spacing: -0.01em;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .btn-p:hover { transform: translateY(-2px); box-shadow: 0 8px 32px var(--green-glow); background: #3ecf90; }
+
+    .btn-o {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border: 1px solid var(--border-hi);
+      color: var(--text);
+      border-radius: 11px;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-o:hover { border-color: var(--green); background: var(--green-dim); }
+
+    .hero-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-3);
+    }
+    .chip-dot { width: 4px; height: 4px; background: var(--green); border-radius: 50%; flex-shrink: 0; }
+
+    /* Hero screenshot */
+    .hero-vis { position: relative; }
+
+    .ss-frame {
+      position: relative;
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      border: 1px solid var(--border-hi);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 28px 80px rgba(0,0,0,0.72),
+        0 0 140px rgba(52,178,123,0.07);
+      animation: float 7s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-10px); }
+    }
+
+    .ss-frame img { width: 100%; display: block; }
+
+    .ss-badges {
+      position: absolute;
+      bottom: 18px;
+      left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .ssb {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 600;
+      font-family: var(--mono);
+      backdrop-filter: blur(14px);
+      border: 1px solid;
+    }
+    .ssb-g { background: rgba(52,178,123,0.25); border-color: rgba(52,178,123,0.42); color: #5ee8a5; }
+    .ssb-c { background: rgba(34,211,238,0.20); border-color: rgba(34,211,238,0.38); color: #67e8f9; }
+
+    /* ── PROOF STRIP ────────────────────────────── */
+    #proof {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+    }
+    .proof-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+    }
+    .proof-item {
+      padding: 28px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+    }
+    .proof-item + .proof-item::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 20%; bottom: 20%;
+      width: 1px;
+      background: var(--border);
+    }
+    .proof-n {
+      font-size: 28px;
+      font-weight: 700;
+      font-family: var(--mono);
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .proof-l { font-size: 12px; color: var(--text-3); line-height: 1.4; }
+
+    /* ── PROBLEM ────────────────────────────────── */
+    #problem {
+      padding: 110px 28px;
+      text-align: center;
+      background: linear-gradient(180deg, rgba(52,178,123,0.04) 0%, transparent 100%);
+    }
+    .problem-q {
+      font-size: clamp(20px, 2.8vw, 30px);
+      font-weight: 500;
+      color: var(--text-2);
+      line-height: 1.55;
+      max-width: 800px;
+      margin: 0 auto 20px;
+      letter-spacing: -0.015em;
+    }
+    .problem-q strong { color: var(--text); font-weight: 600; }
+    .problem-a {
+      font-size: 15px;
+      color: var(--text-3);
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* ── FEATURES (alternating) ─────────────────── */
+    #features { border-top: 1px solid var(--border); }
+
+    .feat-block {
+      padding: 96px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .feat-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 88px;
+      align-items: center;
+    }
+    .feat-inner.flip { direction: rtl; }
+    .feat-inner.flip > * { direction: ltr; }
+
+    .feat-kicker {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .fk-g { color: var(--green); }
+    .fk-c { color: var(--cyan); }
+    .fk-p { color: var(--purple); }
+    .fk-a { color: var(--amber); }
+
+    .feat-h {
+      font-size: clamp(24px, 2.6vw, 36px);
+      font-weight: 700;
+      letter-spacing: -0.028em;
+      line-height: 1.18;
+      margin-bottom: 18px;
+    }
+
+    .feat-p {
+      font-size: 15px;
+      color: var(--text-2);
+      line-height: 1.78;
+      margin-bottom: 28px;
+    }
+
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 500;
+      font-family: var(--mono);
+      border: 1px solid;
+    }
+    .pg  { background: var(--green-dim);  border-color: rgba(52,178,123,0.25);  color: var(--green);  }
+    .pc  { background: var(--cyan-dim);   border-color: rgba(34,211,238,0.25);   color: var(--cyan);   }
+    .pp  { background: var(--purple-dim); border-color: rgba(168,85,247,0.25);  color: var(--purple); }
+    .pa  { background: rgba(245,158,11,0.10); border-color: rgba(245,158,11,0.25); color: var(--amber); }
+    .pd  { background: rgba(255,255,255,0.04); border-color: var(--border-hi);   color: var(--text-2); }
+
+    .feat-img {
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      border: 1px solid var(--border-hi);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+    }
+    .feat-img img {
+      width: 100%;
+      display: block;
+      transition: transform 0.6s cubic-bezier(0.16,1,0.3,1);
+    }
+    .feat-img:hover img { transform: scale(1.025); }
+
+    /* AI badge inside feature */
+    .feat-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 20px;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      font-size: 12px;
+      color: var(--text-2);
+      background: var(--bg-1);
+    }
+
+    /* ── HOW IT WORKS ───────────────────────────── */
+    #how {
+      padding: 100px 28px;
+      border-top: 1px solid var(--border);
+    }
+
+    .how-hd { max-width: 1120px; margin: 0 auto 56px; }
+
+    .steps {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+
+    .step {
+      padding: 34px 28px;
+      background: var(--bg);
+      position: relative;
+      transition: background 0.2s;
+    }
+    .step:hover { background: var(--bg-1); }
+
+    .step-num {
+      font-size: 40px;
+      font-weight: 700;
+      font-family: var(--mono);
+      line-height: 1;
+      margin-bottom: 22px;
+      opacity: 0.18;
+      letter-spacing: -0.04em;
+    }
+    .step:nth-child(1) .step-num { color: var(--green); opacity: 0.5; }
+    .step:nth-child(2) .step-num { color: var(--cyan);  opacity: 0.5; }
+    .step:nth-child(3) .step-num { color: var(--purple);opacity: 0.5; }
+    .step:nth-child(4) .step-num { color: var(--amber); opacity: 0.5; }
+
+    .step-icon {
+      position: absolute;
+      top: 28px;
+      right: 28px;
+      font-size: 20px;
+      opacity: 0.6;
+    }
+
+    .step-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+    .step-desc { font-size: 13px; color: var(--text-2); line-height: 1.65; }
+
+    /* ── MODES ──────────────────────────────────── */
+    #modes {
+      padding: 100px 28px;
+      border-top: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(168,85,247,0.03) 0%, transparent 50%);
+    }
+
+    .modes-hd { max-width: 1120px; margin: 0 auto 48px; }
+
+    .modes-grid {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .mode-card {
+      padding: 32px 28px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      background: var(--bg-1);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.22s, border-color 0.22s;
+    }
+    .mode-card:hover { transform: translateY(-3px); border-color: var(--border-hi); }
+    .mode-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    }
+    .mode-card.hot {
+      border-color: rgba(52,178,123,0.28);
+      background: linear-gradient(148deg, rgba(52,178,123,0.07) 0%, var(--bg-1) 55%);
+    }
+
+    .mode-badge {
+      display: inline-flex;
+      padding: 3px 11px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 600;
+      font-family: var(--mono);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .mb-dim  { background: rgba(255,255,255,0.06); color: var(--text-2); }
+    .mb-g    { background: var(--green-dim); color: var(--green); border: 1px solid rgba(52,178,123,0.2); }
+    .mb-p    { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(168,85,247,0.2); }
+
+    .mode-title { font-size: 18px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.01em; }
+    .mode-desc  { font-size: 13px; color: var(--text-2); line-height: 1.65; margin-bottom: 22px; }
+
+    .mode-list { display: flex; flex-direction: column; gap: 8px; }
+    .mode-item {
+      font-size: 12px;
+      color: var(--text-2);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.4;
+    }
+    .mode-item::before {
+      content: '↳';
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 11px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── GALLERY ────────────────────────────────── */
+    #gallery {
+      padding: 100px 28px;
+      border-top: 1px solid var(--border);
+    }
+
+    .gallery-hd { max-width: 1120px; margin: 0 auto 48px; }
+
+    .gallery-grid {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .gallery-item {
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--bg-1);
+      transition: border-color 0.2s, transform 0.28s;
+    }
+    .gallery-item:hover { border-color: var(--border-hi); transform: translateY(-3px); }
+    .gallery-item img { width: 100%; display: block; }
+
+    .gallery-cap {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: var(--mono);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .gc-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── VIDEO DEMO ─────────────────────────────── */
+    #demo {
+      padding: 100px 28px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .demo-hd { max-width: 600px; margin: 0 auto 52px; }
+    .demo-hd h2 { margin-bottom: 12px; }
+
+    .vid-shell {
+      max-width: 900px;
+      margin: 0 auto;
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      border: 1px solid var(--border-hi);
+      background: var(--bg-1);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+    }
+
+    .vid-body {
+      aspect-ratio: 16/9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background:
+        radial-gradient(ellipse at 50% 40%, rgba(52,178,123,0.07) 0%, transparent 60%),
+        linear-gradient(180deg, #09091a 0%, #0b0b18 100%);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .play-ring {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      background: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 10px rgba(52,178,123,0.13);
+      transition: transform 0.22s, box-shadow 0.22s;
+    }
+    .vid-body:hover .play-ring {
+      transform: scale(1.1);
+      box-shadow: 0 0 0 16px rgba(52,178,123,0.14);
+    }
+
+    .vid-label { font-size: 14px; color: var(--text-2); font-family: var(--mono); }
+    .vid-sub   { font-size: 11px; color: var(--text-3); font-family: var(--mono); }
+
+    .vid-bar {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: var(--mono);
+    }
+
+    /* ── OSS / TECH ─────────────────────────────── */
+    #tech {
+      padding: 100px 28px;
+      border-top: 1px solid var(--border);
+    }
+
+    .tech-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .tech-h { margin-bottom: 20px; }
+
+    .code-block {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      background: var(--bg-1);
+      border: 1px solid var(--border-hi);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+
+    .code-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+    .tl { width: 11px; height: 11px; border-radius: 50%; }
+    .tl-r { background: #ff5f57; } .tl-y { background: #febc2e; } .tl-g { background: #28c840; }
+    .code-name { flex: 1; text-align: center; font-size: 10px; color: var(--text-3); }
+
+    .code-body {
+      padding: 22px 22px;
+      line-height: 2.1;
+    }
+    .c-cm { color: var(--text-3); }
+    .c-k  { color: var(--cyan); }
+    .c-v  { color: var(--green); }
+    .c-s  { color: #f0a050; }
+    .c-p  { color: var(--purple); }
+
+    /* Tech stats small grid */
+    .tech-stats {
+      margin-top: 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .stat-card {
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      background: var(--bg);
+    }
+    .stat-n {
+      font-size: 26px;
+      font-weight: 700;
+      font-family: var(--mono);
+      color: var(--green);
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-l { font-size: 12px; color: var(--text-2); }
+
+    /* ── FOOTER ─────────────────────────────────── */
+    footer {
+      padding: 40px 28px;
+      border-top: 1px solid var(--border);
+    }
+    .footer-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-left { display: flex; flex-direction: column; gap: 5px; }
+    .footer-name { font-size: 14px; font-weight: 600; }
+    .footer-attr { font-size: 12px; color: var(--text-3); }
+    .footer-attr a { color: var(--text-2); text-decoration: none; }
+    .footer-attr a:hover { color: var(--green); }
+    .footer-links { display: flex; align-items: center; gap: 20px; }
+    .footer-link { font-size: 13px; color: var(--text-2); text-decoration: none; transition: color 0.2s; }
+    .footer-link:hover { color: var(--text); }
+
+    /* Cursor spotlight */
+    #spotlight {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      width: 480px; height: 480px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(52,178,123,0.055) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      transition: opacity 0.4s;
+      opacity: 0;
+    }
+
+    /* ── RESPONSIVE ─────────────────────────────── */
+    @media (max-width: 960px) {
+      .hero-inner     { grid-template-columns: 1fr; }
+      .hero-vis       { display: none; }
+      .proof-inner    { grid-template-columns: repeat(3, 1fr); }
+      .feat-inner,
+      .feat-inner.flip { grid-template-columns: 1fr; direction: ltr; }
+      .feat-inner.flip .feat-img { order: -1; }
+      .steps          { grid-template-columns: 1fr 1fr; }
+      .modes-grid     { grid-template-columns: 1fr; }
+      .gallery-grid   { grid-template-columns: 1fr; }
+      .tech-inner     { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .steps          { grid-template-columns: 1fr; }
+      .proof-inner    { grid-template-columns: repeat(2, 1fr); }
+      .hero-ctas      { flex-direction: column; }
+      .tech-stats     { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="spotlight"></div>
+
+<!-- ══════════════════════════════════════════════════
+     NAV
+══════════════════════════════════════════════════ -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><polygon points="5,3 19,12 5,21"/></svg>
+    </div>
+    OpenScreen Smart Demo
+  </a>
+  <div class="nav-right">
+    <a href="#features" class="nav-a">Features</a>
+    <a href="#how" class="nav-a">How it works</a>
+    <a href="#modes" class="nav-a">Modes</a>
+    <a href="https://github.com/varaprasadreddy9676/openscreen-smart-demo" class="nav-gh" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.165 6.839 9.489.5.09.682-.218.682-.484 0-.237-.009-.868-.013-1.703-2.782.603-3.369-1.341-3.369-1.341-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.645.35-1.087.636-1.337-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.03-2.682-.103-.253-.447-1.27.098-2.646 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.547 1.376.203 2.393.1 2.646.64.698 1.028 1.59 1.028 2.682 0 3.841-2.337 4.687-4.565 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .269.18.579.688.481C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════
+     HERO
+══════════════════════════════════════════════════ -->
+<section id="hero">
+  <div class="hero-orb"></div>
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <div class="hero-eyebrow" data-r>
+        <span class="pulse"></span>
+        Hackathon Build · Built on OpenScreen · macOS
+      </div>
+      <h1 class="hero-title" data-r data-d="1">
+        Record raw.<br>
+        <span class="gt">Ship polished.</span>
+      </h1>
+      <p class="hero-desc" data-r data-d="2">
+        Smart Demo analysis understands what you were doing — not just what you were recording. Native telemetry, auto-transcription, AI-assisted edits, and a timeline that actually reads your content.
+      </p>
+      <div class="hero-ctas" data-r data-d="3">
+        <a href="https://github.com/varaprasadreddy9676/openscreen-smart-demo" class="btn-p" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.165 6.839 9.489.5.09.682-.218.682-.484 0-.237-.009-.868-.013-1.703-2.782.603-3.369-1.341-3.369-1.341-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.645.35-1.087.636-1.337-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.03-2.682-.103-.253-.447-1.27.098-2.646 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.547 1.376.203 2.393.1 2.646.64.698 1.028 1.59 1.028 2.682 0 3.841-2.337 4.687-4.565 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .269.18.579.688.481C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
+          View on GitHub
+        </a>
+        <a href="#how" class="btn-o">See how it works →</a>
+      </div>
+      <div class="hero-chips" data-r data-d="4">
+        <span class="chip"><span class="chip-dot"></span>Offline-first</span>
+        <span class="chip"><span class="chip-dot"></span>macOS native telemetry</span>
+        <span class="chip"><span class="chip-dot"></span>BYOK AI optional</span>
+        <span class="chip"><span class="chip-dot"></span>MIT license</span>
+      </div>
+    </div>
+
+    <div class="hero-vis" data-r data-d="2">
+      <div class="ss-frame">
+        <img src="../public/preview.png" alt="OpenScreen Smart Demo — timeline editor" />
+        <div class="ss-badges">
+          <span class="ssb ssb-g">✦ Smart Demo applied</span>
+          <span class="ssb ssb-c">CC captions in timeline</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     PROOF STRIP
+══════════════════════════════════════════════════ -->
+<div id="proof">
+  <div class="proof-inner">
+    <div class="proof-item" data-r>
+      <span class="proof-n">50<span style="color:var(--text-3);font-size:18px;">+</span></span>
+      <span class="proof-l">IPC channels bridging<br>main ↔ renderer</span>
+    </div>
+    <div class="proof-item" data-r data-d="1">
+      <span class="proof-n">3</span>
+      <span class="proof-l">Bundled native macOS<br>telemetry helpers</span>
+    </div>
+    <div class="proof-item" data-r data-d="2">
+      <span class="proof-n">0</span>
+      <span class="proof-l">Cloud dependencies<br>for core features</span>
+    </div>
+    <div class="proof-item" data-r data-d="3">
+      <span class="proof-n" style="color:var(--cyan);font-size:22px;padding-top:4px;">CC</span>
+      <span class="proof-l">Dedicated captions track<br>seekable in timeline</span>
+    </div>
+    <div class="proof-item" data-r data-d="4">
+      <span class="proof-n">2</span>
+      <span class="proof-l">AI providers supported<br>(OpenAI + Ollama)</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PROBLEM STATEMENT
+══════════════════════════════════════════════════ -->
+<section id="problem">
+  <p class="problem-q" data-r>
+    Screen recorders just save pixels. AI demo tools take over the edit
+    and <strong>hide what you were actually doing.</strong>
+  </p>
+  <p class="problem-a" data-r data-d="1">
+    Smart Demo sits in between — it reads click patterns, silence, transcript, and cursor movement to figure out what matters, then suggests. You decide what to keep.
+  </p>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     FEATURES
+══════════════════════════════════════════════════ -->
+<div id="features">
+
+  <!-- Feature 1 -->
+  <div class="feat-block">
+    <div class="feat-inner">
+      <div class="feat-text" data-r>
+        <span class="feat-kicker fk-a">Native macOS</span>
+        <h2 class="feat-h">Click data your browser<br>never sees.</h2>
+        <p class="feat-p">
+          Three bundled native helpers — MouseClickMonitor, KeyboardShortcutMonitor, and MacOSTranscriber — run alongside your recording and capture real interaction signals. Exact cursor coordinates at 10 Hz, true keystroke timings, native speech recognition. None of it is simulated.
+        </p>
+        <div class="pills">
+          <span class="pill pa">MouseClickMonitor.app</span>
+          <span class="pill pa">KeyboardShortcutMonitor.app</span>
+          <span class="pill pd">10 Hz cursor sampling</span>
+        </div>
+        <div class="feat-note">
+          🔒 Native helpers run with macOS entitlements — not browser permissions
+        </div>
+      </div>
+      <div class="feat-img" data-r data-d="1">
+        <img src="../public/preview4.png" alt="Video editor with timeline and native telemetry" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature 2 -->
+  <div class="feat-block">
+    <div class="feat-inner flip">
+      <div class="feat-text" data-r>
+        <span class="feat-kicker fk-c">Transcription → Timeline</span>
+        <h2 class="feat-h">Say something.<br>See a caption track.</h2>
+        <p class="feat-p">
+          Record with a mic and get a CC row in your timeline automatically. Each segment is editable with millisecond-precision timestamps, seekable by click, and burned into your final export. No separate captioning workflow — it lives in the editor.
+        </p>
+        <div class="pills">
+          <span class="pill pc">macOS native transcription</span>
+          <span class="pill pc">SRT / VTT import</span>
+          <span class="pill pg">CC row in timeline</span>
+          <span class="pill pd">Click to seek</span>
+        </div>
+      </div>
+      <div class="feat-img" data-r data-d="1">
+        <img src="../public/preview.png" alt="Timeline editor showing CC captions track" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature 3 -->
+  <div class="feat-block">
+    <div class="feat-inner">
+      <div class="feat-text" data-r>
+        <span class="feat-kicker fk-g">Smart Demo Analysis</span>
+        <h2 class="feat-h">Local heuristics,<br>no API key needed.</h2>
+        <p class="feat-p">
+          Before AI ever enters the picture, Smart Demo runs locally — detecting click bursts, typing sessions, navigation events, and silence gaps. Zoom and trim suggestions arrive the moment your recording loads. The AI layer is additive. The local layer is always on.
+        </p>
+        <div class="pills">
+          <span class="pill pg">Click pattern detection</span>
+          <span class="pill pg">Silence detection</span>
+          <span class="pill pg">Auto-zoom suggestions</span>
+          <span class="pill pd">Before / After preview</span>
+        </div>
+      </div>
+      <div class="feat-img" data-r data-d="1">
+        <img src="../public/preview2.png" alt="Settings panel with zoom and export controls" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature 4 -->
+  <div class="feat-block" style="border-bottom:none;">
+    <div class="feat-inner flip">
+      <div class="feat-text" data-r>
+        <span class="feat-kicker fk-p">BYOK AI</span>
+        <h2 class="feat-h">OpenAI or Ollama.<br>Your key, your data.</h2>
+        <p class="feat-p">
+          Bring your own OpenAI key for cloud speed, or route to a local Ollama instance for zero data egress. The app auto-discovers available Ollama models and knows the difference between base, instruction-tuned, and vision-capable ones. API keys never touch renderer code.
+        </p>
+        <div class="pills">
+          <span class="pill pp">OpenAI GPT-4o</span>
+          <span class="pill pp">Ollama local inference</span>
+          <span class="pill pd">Secrets in main process only</span>
+          <span class="pill pd">Selective AI apply</span>
+        </div>
+      </div>
+      <div class="feat-img" data-r data-d="1">
+        <img src="../public/preview3.png" alt="Recording HUD with source selection" />
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     HOW IT WORKS
+══════════════════════════════════════════════════ -->
+<section id="how">
+  <div class="how-hd">
+    <span class="tag" data-r>The flow</span>
+    <h2 data-r data-d="1">From recording to polished demo<br>in four steps.</h2>
+    <p class="sub" data-r data-d="2">The whole pipeline — record, analyze, polish, export — happens locally by default. Cloud AI is optional at step three.</p>
+  </div>
+
+  <div class="steps">
+    <div class="step" data-r>
+      <span class="step-icon">🎬</span>
+      <div class="step-num">01</div>
+      <div class="step-title">Record</div>
+      <p class="step-desc">Screen + mic + native click/keystroke telemetry captured simultaneously. Saves as .webm with cursor JSON and audio sidecars alongside.</p>
+    </div>
+    <div class="step" data-r data-d="1">
+      <span class="step-icon">✦</span>
+      <div class="step-num">02</div>
+      <div class="step-title">Analyze</div>
+      <p class="step-desc">Smart Demo heuristics run the moment the editor opens. Auto-transcription fires if a .transcription.wav sidecar exists. No waiting, no manual trigger.</p>
+    </div>
+    <div class="step" data-r data-d="2">
+      <span class="step-icon">✂️</span>
+      <div class="step-num">03</div>
+      <div class="step-title">Polish</div>
+      <p class="step-desc">Review zooms, trims, and captions in the timeline. Apply AI suggestions selectively. Toggle between raw and polished preview to see the exact transformation.</p>
+    </div>
+    <div class="step" data-r data-d="3">
+      <span class="step-icon">📤</span>
+      <div class="step-num">04</div>
+      <div class="step-title">Export</div>
+      <p class="step-desc">MP4 or GIF with captions burned in, click emphasis, keystroke overlays, and applied effects. Share the file — not a screen recording app link.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     MODES
+══════════════════════════════════════════════════ -->
+<section id="modes">
+  <div class="modes-hd">
+    <span class="tag" data-r>Three operating modes</span>
+    <h2 data-r data-d="1">Works however you need it to.</h2>
+    <p class="sub" data-r data-d="2">No API key required to get started. The local pipeline is fully functional on its own. AI is a layer on top, not a dependency underneath.</p>
+  </div>
+  <div class="modes-grid">
+    <div class="mode-card" data-r>
+      <div class="mode-badge mb-dim">Offline</div>
+      <h3 class="mode-title">Local heuristics only</h3>
+      <p class="mode-desc">Full Smart Demo analysis without any network call. Works on a plane. Works in a secure environment. Works on day one with no setup.</p>
+      <ul class="mode-list">
+        <li class="mode-item">Click, typing, silence detection</li>
+        <li class="mode-item">Auto-zoom and trim suggestions</li>
+        <li class="mode-item">Native macOS transcription</li>
+        <li class="mode-item">No API key, no internet</li>
+      </ul>
+    </div>
+    <div class="mode-card hot" data-r data-d="1">
+      <div class="mode-badge mb-g">Hybrid</div>
+      <h3 class="mode-title">Local + BYOK AI refinement</h3>
+      <p class="mode-desc">Run local heuristics first, then optionally pass to OpenAI for transcript-grounded zoom planning, step titles, and callout suggestions.</p>
+      <ul class="mode-list">
+        <li class="mode-item">OpenAI GPT-4o support</li>
+        <li class="mode-item">Transcript-aware AI suggestions</li>
+        <li class="mode-item">Secrets in main process, never in files</li>
+        <li class="mode-item">Selective apply — not auto-accept</li>
+      </ul>
+    </div>
+    <div class="mode-card" data-r data-d="2">
+      <div class="mode-badge mb-p">Local AI</div>
+      <h3 class="mode-title">Ollama on-device</h3>
+      <p class="mode-desc">Route model calls to a local Ollama instance. Auto-discovers models, distinguishes base vs instruction-tuned, works on air-gapped machines.</p>
+      <ul class="mode-list">
+        <li class="mode-item">Zero data leaves your machine</li>
+        <li class="mode-item">Auto model discovery</li>
+        <li class="mode-item">Vision-capable model detection</li>
+        <li class="mode-item">Works fully offline</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     GALLERY
+══════════════════════════════════════════════════ -->
+<section id="gallery">
+  <div class="gallery-hd">
+    <span class="tag" data-r>Screenshots</span>
+    <h2 data-r data-d="1">See what you're getting.</h2>
+    <p class="sub" data-r data-d="2">Real screenshots from the app — no mockups, no stock photos.</p>
+  </div>
+  <div class="gallery-grid">
+    <div class="gallery-item" data-r>
+      <img src="../public/preview.png" alt="Timeline editor with zoom and captions tracks" />
+      <div class="gallery-cap">
+        <span class="gc-dot" style="background:var(--green)"></span>
+        Timeline editor — zoom, trim, CC, and speed tracks
+      </div>
+    </div>
+    <div class="gallery-item" data-r data-d="1">
+      <img src="../public/preview2.png" alt="Settings panel with zoom level and export controls" />
+      <div class="gallery-cap">
+        <span class="gc-dot" style="background:var(--cyan)"></span>
+        Settings panel — zoom depth, effects, wallpaper, export
+      </div>
+    </div>
+    <div class="gallery-item" data-r data-d="2">
+      <img src="../public/preview3.png" alt="Recording HUD with source selector" />
+      <div class="gallery-cap">
+        <span class="gc-dot" style="background:var(--purple)"></span>
+        Recording HUD — minimal, stays out of the way
+      </div>
+    </div>
+    <div class="gallery-item" data-r data-d="3">
+      <img src="../public/preview4.png" alt="Video preview with smart demo analysis" />
+      <div class="gallery-cap">
+        <span class="gc-dot" style="background:var(--amber)"></span>
+        Video preview — Smart Demo zooms applied, captions visible
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     VIDEO DEMO PLACEHOLDER
+══════════════════════════════════════════════════ -->
+<section id="demo">
+  <div class="demo-hd">
+    <span class="tag" data-r>Demo</span>
+    <h2 data-r data-d="1">Watch the full walkthrough.</h2>
+    <p class="sub" style="margin:0 auto;" data-r data-d="2">From raw recording to polished export — the complete flow in under three minutes.</p>
+  </div>
+
+  <div class="vid-shell" data-r>
+    <div class="vid-body">
+      <div class="play-ring">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#000"><polygon points="6,4 20,12 6,20"/></svg>
+      </div>
+      <div class="vid-label">[ Demo video — add your recording here ]</div>
+      <div class="vid-sub">Replace with: &lt;video&gt; tag, YouTube embed, or Loom link</div>
+    </div>
+    <div class="vid-bar">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+      demo-recording.mp4 · ~3 min · replace this placeholder with your actual demo
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     TECH / OPEN SOURCE
+══════════════════════════════════════════════════ -->
+<section id="tech">
+  <div class="tech-inner">
+    <div data-r>
+      <span class="tag">Under the hood</span>
+      <h2 class="tech-h">Electron + React + TypeScript.<br>Deep native integration.</h2>
+      <p class="sub" style="margin-bottom:0">The main process handles recording, native telemetry, transcription, and AI provider calls. The renderer handles the UI. 50+ IPC channels connect them — keeping secrets and privileged APIs where they belong.</p>
+      <div class="tech-stats">
+        <div class="stat-card">
+          <div class="stat-n">50+</div>
+          <div class="stat-l">IPC contextBridge channels</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">3</div>
+          <div class="stat-l">Native macOS helper apps</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n" style="color:var(--cyan)">CC</div>
+          <div class="stat-l">Captions track in timeline editor</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n" style="color:var(--purple)">AI</div>
+          <div class="stat-l">Providers: OpenAI + Ollama</div>
+        </div>
+      </div>
+    </div>
+
+    <div data-r data-d="1">
+      <div class="code-block">
+        <div class="code-titlebar">
+          <span class="tl tl-r"></span>
+          <span class="tl tl-y"></span>
+          <span class="tl tl-g"></span>
+          <span class="code-name">architecture.ts</span>
+        </div>
+        <div class="code-body">
+          <span class="c-cm">// Main process — privileged</span><br>
+          <span class="c-k">const</span> mainProcess = {<br>
+          &nbsp;&nbsp;recording: <span class="c-s">"lifecycle + native capture"</span>,<br>
+          &nbsp;&nbsp;telemetry: <span class="c-s">"click · key · cursor"</span>,<br>
+          &nbsp;&nbsp;transcription: <span class="c-s">"MacOSTranscriber.app"</span>,<br>
+          &nbsp;&nbsp;ai: <span class="c-s">"OpenAI | Ollama"</span>,<br>
+          &nbsp;&nbsp;secrets: <span class="c-v">"electron-store (encrypted)"</span>,<br>
+          };<br>
+          <br>
+          <span class="c-cm">// Renderer — React UI</span><br>
+          <span class="c-k">const</span> renderer = {<br>
+          &nbsp;&nbsp;editor: <span class="c-s">"timeline · zooms · captions"</span>,<br>
+          &nbsp;&nbsp;preview: <span class="c-s">"Pixi.js overlay rendering"</span>,<br>
+          &nbsp;&nbsp;export: <span class="c-s">"MP4 | GIF + burned-in CC"</span>,<br>
+          };<br>
+          <br>
+          <span class="c-cm">// Bridge — 50+ channels</span><br>
+          <span class="c-p">window.electronAPI</span>.<span class="c-v">ipcBridge</span>();
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-left">
+      <div class="footer-name">OpenScreen Smart Demo</div>
+      <div class="footer-attr">
+        Built on <a href="https://github.com/siddharthvaddem/openscreen" target="_blank" rel="noopener">OpenScreen</a>
+        by <a href="https://github.com/siddharthvaddem" target="_blank" rel="noopener">@siddharthvaddem</a>
+        &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; Hackathon 2025
+      </div>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/varaprasadreddy9676/openscreen-smart-demo" class="footer-link" target="_blank" rel="noopener">GitHub ↗</a>
+      <a href="https://github.com/varaprasadreddy9676/openscreen-smart-demo#readme" class="footer-link" target="_blank" rel="noopener">README ↗</a>
+      <a href="https://github.com/varaprasadreddy9676/openscreen-smart-demo/blob/main/HACKATHON_DEMO.md" class="footer-link" target="_blank" rel="noopener">Demo script ↗</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── Scroll reveal ─────────────────────────────────
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -48px 0px' });
+
+  document.querySelectorAll('[data-r]').forEach((el) => observer.observe(el));
+
+  // ── Cursor spotlight ──────────────────────────────
+  const spot = document.getElementById('spotlight');
+  let entered = false;
+
+  document.addEventListener('mousemove', (e) => {
+    spot.style.left = e.clientX + 'px';
+    spot.style.top  = e.clientY + 'px';
+    if (!entered) { spot.style.opacity = '1'; entered = true; }
+  });
+  document.addEventListener('mouseleave', () => { spot.style.opacity = '0'; entered = false; });
+
+  // ── Nav active link highlight ─────────────────────
+  const sections = document.querySelectorAll('section[id], div[id]');
+  const navLinks  = document.querySelectorAll('.nav-a');
+
+  const sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        const id = e.target.id;
+        navLinks.forEach((a) => {
+          a.style.color = a.getAttribute('href') === `#${id}` ? 'var(--text)' : '';
+        });
+      }
+    });
+  }, { threshold: 0.4 });
+
+  sections.forEach((s) => sectionObserver.observe(s));
+</script>
+</body>
+</html>
