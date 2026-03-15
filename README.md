@@ -5,130 +5,209 @@
 <h1 align="center">OpenScreen Smart Demo</h1>
 
 <p align="center">
-  <strong>AI-powered smart demo generation built on top of OpenScreen.</strong><br/>
-  Automatically converts screen recordings into polished product demos.
+  <strong>Record a screen demo, understand what happened, and turn it into a polished walkthrough.</strong>
+</p>
+
+<p align="center">
+  Local-first Smart Demo analysis, optional BYOK AI, transcript-aware zooms, captions, click telemetry, and export-ready output.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-green" />
+  <img src="https://img.shields.io/badge/desktop-Electron-black" />
   <img src="https://img.shields.io/badge/built%20on-OpenScreen-blue" />
-  <img src="https://img.shields.io/badge/status-hackathon--MVP-purple" />
 </p>
-
----
-
-## How It Works
-
-```
-  ┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐     ┌───────────────┐
-  │  Click      │     │  Record screen   │     │  Smart Demo      │     │  Export       │
-  │  ✦ Smart   │ ──▶ │  normally        │ ──▶ │  panel analyses  │ ──▶ │  polished     │
-  │  button     │     │  (cursor tracked)│     │  + applies fx    │     │  MP4 / GIF    │
-  └─────────────┘     └──────────────────┘     └──────────────────┘     └───────────────┘
-```
-
-After recording, the app analyses 10 Hz cursor telemetry to detect:
-
-| Signal | Detection method |
-|---|---|
-| **Click** | Cursor moves → sudden stop → 150–800 ms dwell → resumes |
-| **Typing** | Cursor velocity below threshold for > 1 second |
-| **Window change** | Instantaneous position jump > 60% of screen width |
-| **Navigation** | Fast sweep covering > 30% of screen distance |
-
-From those signals it automatically generates:
-
-- **Zoom regions** — centred on each click, 1.5× scale, 1.5 s duration
-- **Click highlights** — animated pulse circle, `#4F8CFF`, 600 ms
-- **Tutorial steps** — numbered list with timestamps
-- **Trim suggestions** — silence periods > 3 s flagged for removal
-
----
-
-## Quick Start
-
-```bash
-npm install
-npm run dev          # development (Electron + Vite)
-npm run build:mac    # production macOS build
-```
-
----
-
-## Smart Demo Usage
-
-1. Select a screen/window source in the HUD overlay
-2. Click the **✦ Smart** purple button → recording starts
-3. Record your workflow naturally (open browser, click, type, navigate)
-4. Click **✦ Smart** again to stop → editor opens automatically
-5. In the editor right panel, open the **Smart Demo** accordion
-6. Click **Generate Smart Demo** → review detected interactions and steps
-7. Click **Apply Zoom & Highlights** → effects added to the timeline
-8. Optionally click **Trim Silences** to cut inactive stretches
-9. Play the preview, then **Export** as MP4 or GIF
-
----
-
-## Demo Scenario (Hackathon)
-
-The ideal 60-second demo recording:
-
-```
-1. Open Chrome
-2. Navigate to a login page
-3. Click the email field  ← zoom + highlight
-4. Type an email address  ← zoom + typing step
-5. Click the password field ← zoom + highlight
-6. Type a password         ← zoom + typing step
-7. Click Login button      ← zoom + highlight
-8. Wait on dashboard       ← silence detected → trim suggestion
-```
-
-**Result:** ~4 zoom regions, ~3 click highlights, 3–4 tutorial steps, 1 trim suggestion.
-
----
-
-## New Files Added
-
-```
-src/
-├── smart-demo/
-│   ├── interactionRecorder.ts   # Cursor telemetry → click/type/nav events
-│   ├── timelineAnalyzer.ts      # Events → demo segments with zoom targets
-│   ├── inactivityDetector.ts    # Silence detection for trim suggestions
-│   ├── stepGenerator.ts         # Human-readable tutorial step generation
-│   └── effects/
-│       ├── autoZoom.ts          # ZoomRegion[] from click segments
-│       └── clickHighlight.ts    # AnnotationRegion[] pulse circles
-└── ui/
-    └── SmartDemoPanel.tsx       # React panel in the editor sidebar
-```
-
----
-
-## Core Features (from OpenScreen)
-
-- Screen / window recording at up to 4K 60 fps
-- Timeline editor: zoom, trim, speed, annotation regions
-- Background wallpapers, gradients, solid colours
-- Annotations: text, arrows, images
-- Export: MP4 and GIF at configurable quality
-
----
-
-## Built With
-
-Electron · React · TypeScript · Vite · PixiJS · Tailwind CSS
-
----
-
-## Attribution
-
-Built on top of **OpenScreen** by [@siddharthvaddem](https://github.com/siddharthvaddem)
-Original: https://github.com/siddharthvaddem/openscreen · MIT License
 
 ---
 
 ## Pitch
 
-> OpenScreen Smart Demo is an AI-assisted demo creation tool that automatically detects user interactions in screen recordings and converts them into polished product demos with smart zooms, click highlights, and generated step-by-step guidance — all with one click.
+Most screen recorders stop at capture. Most AI demo tools over-edit, over-zoom, or hide the real workflow behind too much automation.
+
+OpenScreen Smart Demo is built for a better path:
+
+- record normally
+- capture real interaction signals
+- understand narration and clicks together
+- suggest edits instead of silently forcing them
+- export a polished demo with captions, zooms, trims, and keystroke overlays
+
+This project is designed to work in three modes:
+
+- `Offline`: local Smart Demo heuristics, no key required
+- `Hybrid`: local analysis plus optional BYOK AI refinement
+- `Local AI`: Ollama for teams that want to stay on-device
+
+## What Makes It Useful
+
+- `Speech-grounded Smart Demo`
+  The app can use transcript + cursor + frames together, so spoken instructions like “click this button” or “look at this chart” become better zooms, focus moments, and step titles.
+
+- `Native interaction telemetry`
+  On macOS, the app can capture true native click telemetry and global keystrokes for cleaner demo polishing.
+
+- `Better polish controls`
+  Instead of random AI output, the editor supports selective apply for AI zooms and trims, one-click polish, calm zoom behavior, click emphasis, captions, and keystroke overlays.
+
+- `Before / after demoability`
+  The editor has an `Original` vs `Polished` preview mode so judges can immediately see the transformation.
+
+## Core Features
+
+### Recording
+
+- screen/window recording
+- microphone recording enabled by default
+- pause / resume
+- local recording storage
+- native click telemetry on macOS
+- native keystroke telemetry on macOS
+
+### Editor
+
+- timeline-based editing
+- zoom regions
+- trim regions
+- speed regions
+- annotations
+- crop / padding / wallpaper
+- before / after preview mode
+
+### Smart Demo
+
+- local click / typing / navigation / silence analysis
+- calmer auto-zoom planning
+- transcript-aware callouts
+- one-click `Polish Demo`
+- speech-aware AI refinement
+
+### Transcript And Captions
+
+- import transcript from common formats
+- built-in transcription backends
+- transcript review / editing
+- SRT / VTT export
+- preview captions
+- burned-in captions for export
+
+### AI Assist
+
+- BYOK provider settings
+- OpenAI support
+- Ollama support
+- local Ollama model discovery
+- model guidance for base vs instruction vs vision-capable models
+- AI-generated summaries, step titles, zooms, trims, and focus moments
+
+## Demo Flow
+
+The strongest demo path is:
+
+1. Record a narrated walkthrough.
+2. Open the editor and show `Original Preview`.
+3. Transcribe audio or import a transcript.
+4. Run `One-Click Polish Demo`.
+5. Show `Polished Preview`.
+6. Open `AI Assist` and refine further.
+7. Export MP4 + captions.
+
+For a ready-to-use judging script, see [HACKATHON_DEMO.md](/Users/sai/Documents/GitHub/openscreen-smart-demo/HACKATHON_DEMO.md).
+
+For a concise submission brief, see [HACKATHON_SUBMISSION.md](/Users/sai/Documents/GitHub/openscreen-smart-demo/HACKATHON_SUBMISSION.md).
+
+## Architecture
+
+```text
+Record screen
+  ->
+Capture video + cursor telemetry + optional mic audio
+  ->
+Open editor with recording sidecars
+  ->
+Run local Smart Demo analysis
+  ->
+Optionally run BYOK AI refinement
+  ->
+Apply zooms / trims / captions / callouts / overlays
+  ->
+Export MP4 or GIF
+```
+
+Main subsystems:
+
+- `electron/`
+  main process, secure storage, IPC, native telemetry, transcription backends
+- `shared/`
+  shared cross-process AI and transcription contracts
+- `src/smart-demo/`
+  local heuristic Smart Demo pipeline
+- `src/lib/ai/`
+  AI request building, grounding, transcript parsing, suggestion mapping
+- `src/components/video-editor/`
+  editor UI, playback, timeline, transcript review, AI settings
+- `src/lib/exporter/`
+  export pipeline, captions, keystrokes, click emphasis
+
+## Providers And Transcription
+
+### AI providers
+
+- `OpenAI`
+- `Ollama`
+
+### Transcription backends
+
+- transcript import
+- OpenAI transcription
+- macOS-native transcription path
+
+The app keeps transcription and AI analysis as separate concerns. You can use:
+
+- no AI + imported transcript
+- OpenAI transcription + Ollama analysis
+- local-only analysis without any provider
+
+## Security
+
+- provider secrets are kept out of renderer code
+- AI config is stored in the Electron main process
+- project files do not store API keys
+- the app remains usable without cloud AI
+
+## Local Development
+
+```bash
+npm install
+npm run dev
+```
+
+Useful checks:
+
+```bash
+npm test
+npx tsc --noEmit
+npx vite build
+```
+
+Packaging:
+
+```bash
+npm run build:mac
+```
+
+## Current Product Truth
+
+This repo intentionally separates:
+
+- `local Smart Demo heuristics`
+- `optional model-driven AI refinement`
+
+Not every “smart” feature is AI. The local pipeline is still valuable on its own, and the AI layer is additive rather than mandatory.
+
+## Attribution
+
+Built on top of **OpenScreen**
+
+- Original repository: [siddharthvaddem/openscreen](https://github.com/siddharthvaddem/openscreen)
+- Original author: [@siddharthvaddem](https://github.com/siddharthvaddem)
+- License: MIT

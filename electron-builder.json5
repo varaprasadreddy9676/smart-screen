@@ -24,6 +24,18 @@
     {
       "from": "public/wallpapers",
       "to": "assets/wallpapers"
+    },
+    {
+      "from": "build/native/MacOSTranscriber.app",
+      "to": "native-tools/MacOSTranscriber.app"
+    },
+    {
+      "from": "build/native/MouseClickMonitor.app",
+      "to": "native-tools/MouseClickMonitor.app"
+    },
+    {
+      "from": "build/native/KeyboardShortcutMonitor.app",
+      "to": "native-tools/KeyboardShortcutMonitor.app"
     }
   ],
 
@@ -35,7 +47,11 @@
       }
     ],
     "icon": "icons/icons/mac/icon.icns",
-    "artifactName": "${productName}-Mac-${arch}-${version}-Installer.${ext}"
+    "artifactName": "${productName}-Mac-${arch}-${version}-Installer.${ext}",
+    "extendInfo": {
+      "NSSpeechRecognitionUsageDescription": "OpenScreen uses speech recognition to transcribe narration in your recordings.",
+      "NSMicrophoneUsageDescription": "OpenScreen can include microphone audio in recordings and use it for narration transcription."
+    }
   },
   "linux": {
     "target": [
