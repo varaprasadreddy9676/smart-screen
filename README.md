@@ -1,21 +1,21 @@
 <p align="center">
-  <img src="public/openscreen.png" alt="OpenScreen Smart Demo" width="72" />
+  <img src="public/openscreen.png" alt="Smart Screen" width="72" />
 </p>
 
-<h1 align="center">OpenScreen Smart Demo</h1>
+<h1 align="center">Smart Screen</h1>
 
 <p align="center">
   <strong>Record a screen demo, understand what happened, and turn it into a polished walkthrough.</strong>
 </p>
 
 <p align="center">
-  Local-first Smart Demo analysis, optional BYOK AI, transcript-aware zooms, captions, click telemetry, and export-ready output.
+  Local-first Smart Screen analysis, optional BYOK AI, transcript-aware zooms, captions, click telemetry, and export-ready output.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-green" />
   <img src="https://img.shields.io/badge/desktop-Electron-black" />
-  <img src="https://img.shields.io/badge/built%20on-OpenScreen-blue" />
+  <img src="https://img.shields.io/badge/product-Smart%20Screen-111827" />
 </p>
 
 ---
@@ -24,7 +24,7 @@
 
 Most screen recorders stop at capture. Most AI demo tools over-edit, over-zoom, or hide the real workflow behind too much automation.
 
-OpenScreen Smart Demo is built for a better path:
+Smart Screen is built for a better path:
 
 - record normally
 - capture real interaction signals
@@ -34,13 +34,13 @@ OpenScreen Smart Demo is built for a better path:
 
 This project is designed to work in three modes:
 
-- `Offline`: local Smart Demo heuristics, no key required
+- `Offline`: local Smart Screen heuristics, no key required
 - `Hybrid`: local analysis plus optional BYOK AI refinement
 - `Local AI`: Ollama for teams that want to stay on-device
 
 ## What Makes It Useful
 
-- `Speech-grounded Smart Demo`
+- `Speech-grounded Smart Screen`
   The app can use transcript + cursor + frames together, so spoken instructions like “click this button” or “look at this chart” become better zooms, focus moments, and step titles.
 
 - `Native interaction telemetry`
@@ -88,19 +88,19 @@ This project is designed to work in three modes:
 - burned-in captions for MP4 and GIF exports
 - dedicated "CC" row in timeline editor; click to seek
 
-### Smart Demo
+### Smart Screen
 
 - local click / typing / navigation / silence analysis
 - calmer auto-zoom planning
 - transcript-aware callouts
 - one-click `Polish Demo`
-- Smart Demo panel as slide-over sheet (accessible from top-bar icon)
+- Smart Screen panel as slide-over sheet (accessible from top-bar icon)
 - speech-aware AI refinement
 
 ### AI Assist (Optional BYOK)
 
 - BYOK provider settings with secure secret storage
-- OpenAI support for AI-powered Smart Demo analysis
+- OpenAI support for AI-powered Smart Screen analysis
 - Ollama support for on-device inference
 - local Ollama model discovery
 - model guidance for base vs instruction vs vision-capable models
@@ -112,11 +112,11 @@ The strongest demo path is:
 
 1. **Record** a narrated walkthrough (video + audio + native click/keystroke telemetry captured).
 2. **Editor Opens** — recording is auto-loaded with:
-   - Local Smart Demo analysis (click, typing, navigation, silence detection)
+   - Local Smart Screen analysis (click, typing, navigation, silence detection)
    - Auto-transcription if `.transcription.wav` sidecar exists
 3. **Show Original Preview** — demonstrate the raw recording alongside timeline.
 4. **Review Transcript** — edit captions and timestamps in the transcript review dialog.
-5. **Smart Demo Panel** — open the slide-over sheet to:
+5. **Smart Screen Panel** — open the slide-over sheet to:
    - Tune caption styling (font, size, color, presets)
    - Apply one-click `Polish Demo` (auto-zooms, trims, silences removed)
 6. **Show Polished Preview** — display the transformed version side-by-side with Original.
@@ -138,7 +138,7 @@ Open editor with recording
   |
   → Load video, cursor telemetry, auto-transcribe if .transcription.wav exists
   |
-Local Smart Demo analysis
+Local Smart Screen analysis
   |
   → Detect clicks, typing, inactivity, navigation patterns
   → Generate suggested zooms, trims, focus moments
@@ -205,7 +205,7 @@ npm run build:mac
 
 This repo intentionally separates:
 
-- `local Smart Demo heuristics`
+- `local Smart Screen heuristics`
 - `optional model-driven AI refinement`
 
 Not every “smart” feature is AI. The local pipeline is still valuable on its own, and the AI layer is additive rather than mandatory.

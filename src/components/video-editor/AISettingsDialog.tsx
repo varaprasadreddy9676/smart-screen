@@ -368,7 +368,7 @@ export function AISettingsDialog({
 							<div>
 								<p className="text-sm font-medium text-slate-100">Enable AI analysis</p>
 								<p className="text-xs text-slate-400">
-									Keep local Smart Demo usable even when cloud or local model analysis is off.
+									Keep local Smart Screen analysis usable even when cloud or local model analysis is off.
 								</p>
 							</div>
 							<Switch checked={enabled} onCheckedChange={setEnabled} />

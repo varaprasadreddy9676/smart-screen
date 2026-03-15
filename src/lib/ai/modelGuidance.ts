@@ -70,7 +70,7 @@ export function getAIModelGuidance(
 			);
 		} else {
 			notes.push(
-				"This does not look like a base model, which is usually better for Smart Demo prompting.",
+				"This does not look like a base model, which is usually better for Smart Screen prompting.",
 			);
 		}
 

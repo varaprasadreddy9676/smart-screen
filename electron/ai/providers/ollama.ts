@@ -152,7 +152,7 @@ export class OllamaProvider implements AIProvider {
 
 		const suggestion = normalizeSmartDemoAISuggestion(JSON.parse(rawContent));
 		if (!suggestion) {
-			throw new Error("Ollama returned an invalid Smart Demo payload.");
+			throw new Error("Ollama returned an invalid Smart Screen payload.");
 		}
 
 		return suggestion;

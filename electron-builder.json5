@@ -1,9 +1,9 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.varaprasadreddy9676.openscreensmartdemo",
+  "appId": "com.varaprasadreddy9676.smartscreen",
   "asar": true,
-  "productName": "OpenScreen Smart Demo",
+  "productName": "Smart Screen",
   "npmRebuild": true,
   "buildDependenciesFromSource": true,
   "compression": "normal",
@@ -49,8 +49,8 @@
     "icon": "icons/icons/mac/icon.icns",
     "artifactName": "${productName}-Mac-${arch}-${version}-Installer.${ext}",
     "extendInfo": {
-      "NSSpeechRecognitionUsageDescription": "OpenScreen Smart Demo uses speech recognition to transcribe narration in your recordings.",
-      "NSMicrophoneUsageDescription": "OpenScreen Smart Demo can include microphone audio in recordings and use it for narration transcription."
+      "NSSpeechRecognitionUsageDescription": "Smart Screen uses speech recognition to transcribe narration in your recordings.",
+      "NSMicrophoneUsageDescription": "Smart Screen can include microphone audio in recordings and use it for narration transcription."
     }
   },
   "linux": {

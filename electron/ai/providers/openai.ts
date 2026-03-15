@@ -117,7 +117,7 @@ export class OpenAIProvider implements AIProvider {
 		const payload = (await response.json()) as OpenAIResponse;
 		const suggestion = normalizeSmartDemoAISuggestion(JSON.parse(extractOutputText(payload)));
 		if (!suggestion) {
-			throw new Error("OpenAI returned an invalid Smart Demo payload.");
+			throw new Error("OpenAI returned an invalid Smart Screen payload.");
 		}
 
 		return suggestion;

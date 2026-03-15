@@ -51,7 +51,7 @@ export async function runSmartDemoAIAnalysis(
 ): Promise<AIResult<SmartDemoAISuggestion>> {
 	const normalizedRequest = normalizeSmartDemoAIAnalysisRequest(request);
 	if (!normalizedRequest) {
-		return err("Invalid Smart Demo AI request.");
+		return err("Invalid Smart Screen AI request.");
 	}
 
 	try {

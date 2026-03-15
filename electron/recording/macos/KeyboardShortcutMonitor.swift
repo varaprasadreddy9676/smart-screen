@@ -193,7 +193,7 @@ struct KeyboardShortcutMonitor {
 			emitJSON(
 				ErrorPayload(
 					type: "error",
-					error: "Accessibility permission was denied. Enable OpenScreen Smart Demo in System Settings > Privacy & Security > Accessibility."
+					error: "Accessibility permission was denied. Enable Smart Screen in System Settings > Privacy & Security > Accessibility."
 				)
 			)
 			exit(1)

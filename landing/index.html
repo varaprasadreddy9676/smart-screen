@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OpenScreen Smart Demo — Record Raw. Ship Polished.</title>
-  <meta name="description" content="Smart Demo analysis, native macOS telemetry, AI-assisted captions, and a timeline editor that actually understands your recording. Works fully offline." />
-  <meta property="og:title" content="OpenScreen Smart Demo" />
-  <meta property="og:description" content="From raw recording to polished walkthrough — without the guesswork." />
+  <title>Smart Screen — Turn recordings into polished walkthroughs</title>
+  <meta name="description" content="Turn raw screen recordings into polished walkthroughs with smart zooms, captions, click-aware editing, and optional AI refinement." />
+  <meta property="og:title" content="Smart Screen" />
+  <meta property="og:description" content="Turn raw recordings into polished walkthroughs with click-aware editing, captions, and optional AI refinement." />
   <meta property="og:type" content="website" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -49,6 +49,21 @@
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
+      --scroll-progress: 0;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: -20vh -10vw auto;
+      height: 72vh;
+      background:
+        radial-gradient(circle at 15% 30%, rgba(34,211,238,0.08), transparent 34%),
+        radial-gradient(circle at 78% 18%, rgba(168,85,247,0.10), transparent 30%),
+        radial-gradient(circle at 52% 0%, rgba(52,178,123,0.09), transparent 36%);
+      pointer-events: none;
+      z-index: -1;
+      transform: translate3d(0, calc(var(--scroll-progress) * -36px), 0);
     }
 
     /* ── UTILITIES ──────────────────────────────── */
@@ -114,6 +129,18 @@
       backdrop-filter: blur(24px) saturate(180%);
       -webkit-backdrop-filter: blur(24px) saturate(180%);
       border-bottom: 1px solid var(--border);
+    }
+    nav::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 1px;
+      transform-origin: left center;
+      transform: scaleX(var(--scroll-progress));
+      background: linear-gradient(90deg, var(--green), var(--cyan), var(--purple));
+      opacity: 0.9;
     }
 
     .nav-logo {
@@ -292,6 +319,13 @@
     /* Hero screenshot */
     .hero-vis { position: relative; }
 
+    .hero-stack {
+      position: relative;
+      perspective: 1600px;
+      transform-style: preserve-3d;
+      animation: float 7s ease-in-out infinite;
+    }
+
     .ss-frame {
       position: relative;
       border-radius: var(--r-lg);
@@ -301,7 +335,13 @@
         0 0 0 1px rgba(255,255,255,0.04),
         0 28px 80px rgba(0,0,0,0.72),
         0 0 140px rgba(52,178,123,0.07);
-      animation: float 7s ease-in-out infinite;
+      transform:
+        translate3d(0, 0, 0)
+        rotateX(var(--hero-tilt-x, 0deg))
+        rotateY(var(--hero-tilt-y, 0deg))
+        translateY(var(--hero-float, 0px));
+      transition: transform 0.22s ease-out, box-shadow 0.22s ease-out;
+      will-change: transform;
     }
     @keyframes float {
       0%, 100% { transform: translateY(0); }
@@ -309,6 +349,74 @@
     }
 
     .ss-frame img { width: 100%; display: block; }
+
+    .hero-glass {
+      position: absolute;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(7,7,14,0.55);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-radius: 16px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.38);
+      will-change: transform;
+    }
+    .hero-glass.kpi {
+      top: -26px;
+      right: -26px;
+      min-width: 180px;
+      padding: 14px 16px;
+      transform: translate3d(0, var(--card-offset-y, 0px), 42px);
+    }
+    .hero-glass.flow {
+      left: -34px;
+      bottom: 34px;
+      min-width: 200px;
+      padding: 12px 14px;
+      transform: translate3d(0, var(--card-offset-y-2, 0px), 28px);
+    }
+    .hero-kpi-label,
+    .hero-flow-label {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      font-family: var(--mono);
+    }
+    .hero-kpi-value {
+      margin-top: 6px;
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+    .hero-kpi-value span {
+      color: var(--green);
+    }
+    .hero-kpi-copy,
+    .hero-flow-copy {
+      margin-top: 6px;
+      font-size: 11px;
+      line-height: 1.55;
+      color: var(--text-2);
+    }
+    .hero-flow-steps {
+      margin-top: 10px;
+      display: grid;
+      gap: 6px;
+    }
+    .hero-flow-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text);
+    }
+    .hero-flow-step b {
+      min-width: 18px;
+      color: var(--cyan);
+      font-family: var(--mono);
+      font-size: 10px;
+    }
 
     .ss-badges {
       position: absolute;
@@ -460,6 +568,7 @@
       overflow: hidden;
       border: 1px solid var(--border-hi);
       box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+      will-change: transform;
     }
     .feat-img img {
       width: 100%;
@@ -632,6 +741,7 @@
       border: 1px solid var(--border);
       background: var(--bg-1);
       transition: border-color 0.2s, transform 0.28s;
+      will-change: transform;
     }
     .gallery-item:hover { border-color: var(--border-hi); transform: translateY(-3px); }
     .gallery-item img { width: 100%; display: block; }
@@ -819,6 +929,35 @@
       opacity: 0;
     }
 
+    [data-parallax] {
+      transform: translate3d(0, calc(var(--parallax-y, 0px) + var(--mouse-shift-y, 0px)), 0);
+      transition: transform 0.16s linear;
+      will-change: transform;
+    }
+    [data-parallax][data-axis="x"] {
+      transform: translate3d(var(--parallax-x, 0px), calc(var(--parallax-y, 0px) + var(--mouse-shift-y, 0px)), 0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      [data-parallax],
+      .ss-frame,
+      .hero-glass {
+        transform: none !important;
+      }
+      body::before,
+      #spotlight {
+        display: none;
+      }
+    }
+
     /* ── RESPONSIVE ─────────────────────────────── */
     @media (max-width: 960px) {
       .hero-inner     { grid-template-columns: 1fr; }
@@ -852,7 +991,7 @@
     <div class="nav-icon">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"><polygon points="5,3 19,12 5,21"/></svg>
     </div>
-    OpenScreen Smart Demo
+    Smart Screen
   </a>
   <div class="nav-right">
     <a href="#features" class="nav-a">Features</a>
@@ -869,42 +1008,57 @@
      HERO
 ══════════════════════════════════════════════════ -->
 <section id="hero">
-  <div class="hero-orb"></div>
+  <div class="hero-orb" data-parallax data-speed="0.08"></div>
   <div class="hero-inner">
     <div class="hero-copy">
       <div class="hero-eyebrow" data-r>
         <span class="pulse"></span>
-        Hackathon Build · Built on OpenScreen · macOS
+        Product demos · walkthroughs · bug reports
       </div>
       <h1 class="hero-title" data-r data-d="1">
-        Record raw.<br>
-        <span class="gt">Ship polished.</span>
+        Turn recordings into<br>
+        <span class="gt">polished walkthroughs.</span>
       </h1>
       <p class="hero-desc" data-r data-d="2">
-        Smart Demo analysis understands what you were doing — not just what you were recording. Native telemetry, auto-transcription, AI-assisted edits, and a timeline that actually reads your content.
+        Record once, then let Smart Screen understand your clicks, narration, and workflow. Add polished zooms, captions, trims, and callouts without giving up control of the final edit.
       </p>
       <div class="hero-ctas" data-r data-d="3">
         <a href="https://github.com/varaprasadreddy9676/openscreen-smart-demo" class="btn-p" target="_blank" rel="noopener">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.165 6.839 9.489.5.09.682-.218.682-.484 0-.237-.009-.868-.013-1.703-2.782.603-3.369-1.341-3.369-1.341-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.645.35-1.087.636-1.337-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.03-2.682-.103-.253-.447-1.27.098-2.646 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.547 1.376.203 2.393.1 2.646.64.698 1.028 1.59 1.028 2.682 0 3.841-2.337 4.687-4.565 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .269.18.579.688.481C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
           View on GitHub
         </a>
-        <a href="#how" class="btn-o">See how it works →</a>
+        <a href="#how" class="btn-o">See the workflow →</a>
       </div>
       <div class="hero-chips" data-r data-d="4">
-        <span class="chip"><span class="chip-dot"></span>Offline-first</span>
-        <span class="chip"><span class="chip-dot"></span>macOS native telemetry</span>
-        <span class="chip"><span class="chip-dot"></span>BYOK AI optional</span>
-        <span class="chip"><span class="chip-dot"></span>MIT license</span>
+        <span class="chip"><span class="chip-dot"></span>Click-aware editing</span>
+        <span class="chip"><span class="chip-dot"></span>Narration-powered captions</span>
+        <span class="chip"><span class="chip-dot"></span>Optional BYOK AI</span>
+        <span class="chip"><span class="chip-dot"></span>Offline-first core flow</span>
       </div>
     </div>
 
     <div class="hero-vis" data-r data-d="2">
+      <div class="hero-stack" id="heroStack">
       <div class="ss-frame">
-        <img src="../public/preview.png" alt="OpenScreen Smart Demo — timeline editor" />
+        <img src="../public/preview.png" alt="Smart Screen — timeline editor" />
         <div class="ss-badges">
-          <span class="ssb ssb-g">✦ Smart Demo applied</span>
+          <span class="ssb ssb-g">✦ Smart Screen applied</span>
           <span class="ssb ssb-c">CC captions in timeline</span>
         </div>
+      </div>
+      <div class="hero-glass kpi">
+        <div class="hero-kpi-label">Polish pass</div>
+        <div class="hero-kpi-value"><span>1 click</span> to refine</div>
+        <div class="hero-kpi-copy">Apply captions, smart zooms, trims, and click emphasis in one pass.</div>
+      </div>
+      <div class="hero-glass flow">
+        <div class="hero-flow-label">What it does</div>
+        <div class="hero-flow-steps">
+          <div class="hero-flow-step"><b>01</b> understand the recording</div>
+          <div class="hero-flow-step"><b>02</b> suggest the important moments</div>
+          <div class="hero-flow-step"><b>03</b> export a polished demo</div>
+        </div>
+      </div>
       </div>
     </div>
   </div>
@@ -943,11 +1097,11 @@
 ══════════════════════════════════════════════════ -->
 <section id="problem">
   <p class="problem-q" data-r>
-    Screen recorders just save pixels. AI demo tools take over the edit
-    and <strong>hide what you were actually doing.</strong>
+    Most screen recorders capture everything.<br>
+    Great demos should <strong>focus only on what matters.</strong>
   </p>
   <p class="problem-a" data-r data-d="1">
-    Smart Demo sits in between — it reads click patterns, silence, transcript, and cursor movement to figure out what matters, then suggests. You decide what to keep.
+    Smart Screen sits in the useful middle: it reads clicks, narration, silence, and motion to suggest a cleaner story, while still letting you choose exactly what gets applied.
   </p>
 </section>
 
@@ -961,9 +1115,9 @@
     <div class="feat-inner">
       <div class="feat-text" data-r>
         <span class="feat-kicker fk-a">Native macOS</span>
-        <h2 class="feat-h">Click data your browser<br>never sees.</h2>
+        <h2 class="feat-h">Capture the signals that make<br>a demo understandable.</h2>
         <p class="feat-p">
-          Three bundled native helpers — MouseClickMonitor, KeyboardShortcutMonitor, and MacOSTranscriber — run alongside your recording and capture real interaction signals. Exact cursor coordinates at 10 Hz, true keystroke timings, native speech recognition. None of it is simulated.
+          Three bundled native helpers run alongside your recording to capture the context normal recorders miss: real click positions, keystroke timing, and speech transcription. That means the editor can understand intent, not just pixels.
         </p>
         <div class="pills">
           <span class="pill pa">MouseClickMonitor.app</span>
@@ -971,10 +1125,10 @@
           <span class="pill pd">10 Hz cursor sampling</span>
         </div>
         <div class="feat-note">
-          🔒 Native helpers run with macOS entitlements — not browser permissions
+          🔒 Built for accurate demos, not just generic screen capture
         </div>
       </div>
-      <div class="feat-img" data-r data-d="1">
+      <div class="feat-img" data-r data-d="1" data-parallax data-speed="0.12">
         <img src="../public/preview4.png" alt="Video editor with timeline and native telemetry" />
       </div>
     </div>
@@ -985,9 +1139,9 @@
     <div class="feat-inner flip">
       <div class="feat-text" data-r>
         <span class="feat-kicker fk-c">Transcription → Timeline</span>
-        <h2 class="feat-h">Say something.<br>See a caption track.</h2>
+        <h2 class="feat-h">Narrate naturally.<br>Get captions that stay editable.</h2>
         <p class="feat-p">
-          Record with a mic and get a CC row in your timeline automatically. Each segment is editable with millisecond-precision timestamps, seekable by click, and burned into your final export. No separate captioning workflow — it lives in the editor.
+          Record with a mic and get an editable caption track automatically. Review the transcript, fix wording, seek by segment, and burn captions into the final export without leaving the editor.
         </p>
         <div class="pills">
           <span class="pill pc">macOS native transcription</span>
@@ -996,7 +1150,7 @@
           <span class="pill pd">Click to seek</span>
         </div>
       </div>
-      <div class="feat-img" data-r data-d="1">
+      <div class="feat-img" data-r data-d="1" data-parallax data-speed="0.12">
         <img src="../public/preview.png" alt="Timeline editor showing CC captions track" />
       </div>
     </div>
@@ -1006,10 +1160,10 @@
   <div class="feat-block">
     <div class="feat-inner">
       <div class="feat-text" data-r>
-        <span class="feat-kicker fk-g">Smart Demo Analysis</span>
-        <h2 class="feat-h">Local heuristics,<br>no API key needed.</h2>
+        <span class="feat-kicker fk-g">Smart Screen Analysis</span>
+        <h2 class="feat-h">Useful even without AI.<br>Better when you want it.</h2>
         <p class="feat-p">
-          Before AI ever enters the picture, Smart Demo runs locally — detecting click bursts, typing sessions, navigation events, and silence gaps. Zoom and trim suggestions arrive the moment your recording loads. The AI layer is additive. The local layer is always on.
+          The local Smart Screen pass already gives you useful zoom, trim, and focus suggestions the moment a recording opens. AI is optional refinement, not a requirement for the product to feel smart.
         </p>
         <div class="pills">
           <span class="pill pg">Click pattern detection</span>
@@ -1018,7 +1172,7 @@
           <span class="pill pd">Before / After preview</span>
         </div>
       </div>
-      <div class="feat-img" data-r data-d="1">
+      <div class="feat-img" data-r data-d="1" data-parallax data-speed="0.12">
         <img src="../public/preview2.png" alt="Settings panel with zoom and export controls" />
       </div>
     </div>
@@ -1029,9 +1183,9 @@
     <div class="feat-inner flip">
       <div class="feat-text" data-r>
         <span class="feat-kicker fk-p">BYOK AI</span>
-        <h2 class="feat-h">OpenAI or Ollama.<br>Your key, your data.</h2>
+        <h2 class="feat-h">Bring AI when it helps.<br>Keep control when it doesn’t.</h2>
         <p class="feat-p">
-          Bring your own OpenAI key for cloud speed, or route to a local Ollama instance for zero data egress. The app auto-discovers available Ollama models and knows the difference between base, instruction-tuned, and vision-capable ones. API keys never touch renderer code.
+          Use OpenAI for stronger multimodal refinement, or point to a local Ollama model when privacy matters more. The app keeps secrets in the main process and lets you apply AI suggestions selectively instead of blindly accepting them.
         </p>
         <div class="pills">
           <span class="pill pp">OpenAI GPT-4o</span>
@@ -1040,7 +1194,7 @@
           <span class="pill pd">Selective AI apply</span>
         </div>
       </div>
-      <div class="feat-img" data-r data-d="1">
+      <div class="feat-img" data-r data-d="1" data-parallax data-speed="0.12">
         <img src="../public/preview3.png" alt="Recording HUD with source selection" />
       </div>
     </div>
@@ -1054,8 +1208,8 @@
 <section id="how">
   <div class="how-hd">
     <span class="tag" data-r>The flow</span>
-    <h2 data-r data-d="1">From recording to polished demo<br>in four steps.</h2>
-    <p class="sub" data-r data-d="2">The whole pipeline — record, analyze, polish, export — happens locally by default. Cloud AI is optional at step three.</p>
+    <h2 data-r data-d="1">From rough recording to polished demo<br>in four steps.</h2>
+    <p class="sub" data-r data-d="2">The core workflow works locally by default. AI can sharpen the result, but the product is already useful before you add it.</p>
   </div>
 
   <div class="steps">
@@ -1069,7 +1223,7 @@
       <span class="step-icon">✦</span>
       <div class="step-num">02</div>
       <div class="step-title">Analyze</div>
-      <p class="step-desc">Smart Demo heuristics run the moment the editor opens. Auto-transcription fires if a .transcription.wav sidecar exists. No waiting, no manual trigger.</p>
+      <p class="step-desc">Smart Screen heuristics run the moment the editor opens. Auto-transcription fires if a .transcription.wav sidecar exists. No waiting, no manual trigger.</p>
     </div>
     <div class="step" data-r data-d="2">
       <span class="step-icon">✂️</span>
@@ -1092,14 +1246,14 @@
 <section id="modes">
   <div class="modes-hd">
     <span class="tag" data-r>Three operating modes</span>
-    <h2 data-r data-d="1">Works however you need it to.</h2>
-    <p class="sub" data-r data-d="2">No API key required to get started. The local pipeline is fully functional on its own. AI is a layer on top, not a dependency underneath.</p>
+    <h2 data-r data-d="1">Useful on day one. Flexible when you need more.</h2>
+    <p class="sub" data-r data-d="2">Start with the local editing flow, then choose cloud AI or local Ollama only if your workflow benefits from it.</p>
   </div>
   <div class="modes-grid">
     <div class="mode-card" data-r>
       <div class="mode-badge mb-dim">Offline</div>
       <h3 class="mode-title">Local heuristics only</h3>
-      <p class="mode-desc">Full Smart Demo analysis without any network call. Works on a plane. Works in a secure environment. Works on day one with no setup.</p>
+      <p class="mode-desc">Full Smart Screen analysis without any network call. Works on a plane. Works in a secure environment. Works on day one with no setup.</p>
       <ul class="mode-list">
         <li class="mode-item">Click, typing, silence detection</li>
         <li class="mode-item">Auto-zoom and trim suggestions</li>
@@ -1142,32 +1296,32 @@
     <p class="sub" data-r data-d="2">Real screenshots from the app — no mockups, no stock photos.</p>
   </div>
   <div class="gallery-grid">
-    <div class="gallery-item" data-r>
+    <div class="gallery-item" data-r data-parallax data-speed="0.1">
       <img src="../public/preview.png" alt="Timeline editor with zoom and captions tracks" />
       <div class="gallery-cap">
         <span class="gc-dot" style="background:var(--green)"></span>
         Timeline editor — zoom, trim, CC, and speed tracks
       </div>
     </div>
-    <div class="gallery-item" data-r data-d="1">
+    <div class="gallery-item" data-r data-d="1" data-parallax data-speed="0.12">
       <img src="../public/preview2.png" alt="Settings panel with zoom level and export controls" />
       <div class="gallery-cap">
         <span class="gc-dot" style="background:var(--cyan)"></span>
         Settings panel — zoom depth, effects, wallpaper, export
       </div>
     </div>
-    <div class="gallery-item" data-r data-d="2">
+    <div class="gallery-item" data-r data-d="2" data-parallax data-speed="0.1">
       <img src="../public/preview3.png" alt="Recording HUD with source selector" />
       <div class="gallery-cap">
         <span class="gc-dot" style="background:var(--purple)"></span>
         Recording HUD — minimal, stays out of the way
       </div>
     </div>
-    <div class="gallery-item" data-r data-d="3">
+    <div class="gallery-item" data-r data-d="3" data-parallax data-speed="0.12">
       <img src="../public/preview4.png" alt="Video preview with smart demo analysis" />
       <div class="gallery-cap">
         <span class="gc-dot" style="background:var(--amber)"></span>
-        Video preview — Smart Demo zooms applied, captions visible
+        Video preview — Smart Screen zooms applied, captions visible
       </div>
     </div>
   </div>
@@ -1266,7 +1420,7 @@
 <footer>
   <div class="footer-inner">
     <div class="footer-left">
-      <div class="footer-name">OpenScreen Smart Demo</div>
+      <div class="footer-name">Smart Screen</div>
       <div class="footer-attr">
         Maintained by <a href="https://github.com/varaprasadreddy9676" target="_blank" rel="noopener">SaiVaraprasad Medapati</a>
         &nbsp;·&nbsp; Repo <a href="https://github.com/varaprasadreddy9676/openscreen-smart-demo" target="_blank" rel="noopener">openscreen-smart-demo</a>
@@ -1321,6 +1475,63 @@
   }, { threshold: 0.4 });
 
   sections.forEach((s) => sectionObserver.observe(s));
+
+  // ── Scroll parallax + progress ───────────────────
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const parallaxNodes = prefersReducedMotion ? [] : [...document.querySelectorAll('[data-parallax]')];
+  const root = document.documentElement;
+  let ticking = false;
+
+  function updateMotion() {
+    const scrollTop = window.scrollY || window.pageYOffset;
+    const scrollRange = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+    root.style.setProperty('--scroll-progress', String(scrollTop / scrollRange));
+
+    parallaxNodes.forEach((node) => {
+      const speed = Number(node.dataset.speed || 0.12);
+      const rect = node.getBoundingClientRect();
+      const centerOffset = rect.top + rect.height / 2 - window.innerHeight / 2;
+      const parallaxY = centerOffset * -speed;
+      const parallaxX = node.dataset.axis === 'x' ? centerOffset * speed * 0.18 : 0;
+      node.style.setProperty('--parallax-y', `${parallaxY.toFixed(2)}px`);
+      node.style.setProperty('--parallax-x', `${parallaxX.toFixed(2)}px`);
+    });
+
+    ticking = false;
+  }
+
+  if (!prefersReducedMotion) {
+    updateMotion();
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateMotion);
+        ticking = true;
+      }
+    }, { passive: true });
+    window.addEventListener('resize', updateMotion);
+  }
+
+  // ── Hero tilt ────────────────────────────────────
+  const heroStack = document.getElementById('heroStack');
+  if (heroStack && !prefersReducedMotion) {
+    heroStack.addEventListener('mousemove', (event) => {
+      const rect = heroStack.getBoundingClientRect();
+      const px = (event.clientX - rect.left) / rect.width;
+      const py = (event.clientY - rect.top) / rect.height;
+      const tiltX = (0.5 - py) * 7;
+      const tiltY = (px - 0.5) * 10;
+      heroStack.style.setProperty('--hero-tilt-x', `${tiltX.toFixed(2)}deg`);
+      heroStack.style.setProperty('--hero-tilt-y', `${tiltY.toFixed(2)}deg`);
+      heroStack.style.setProperty('--card-offset-y', `${((py - 0.5) * -10).toFixed(2)}px`);
+      heroStack.style.setProperty('--card-offset-y-2', `${((py - 0.5) * 8).toFixed(2)}px`);
+    });
+    heroStack.addEventListener('mouseleave', () => {
+      heroStack.style.setProperty('--hero-tilt-x', '0deg');
+      heroStack.style.setProperty('--hero-tilt-y', '0deg');
+      heroStack.style.setProperty('--card-offset-y', '0px');
+      heroStack.style.setProperty('--card-offset-y-2', '0px');
+    });
+  }
 </script>
 </body>
 </html>

@@ -132,7 +132,7 @@ export function analyzeSpeechGrounding({
 				id: "transcript-warning-short-coverage",
 				severity: "warning",
 				message:
-					"Transcript covers only a small portion of the video. Smart Demo may miss narration-driven moments.",
+					"Transcript covers only a small portion of the video. Smart Screen may miss narration-driven moments.",
 			});
 		}
 	}

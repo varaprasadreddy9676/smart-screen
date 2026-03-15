@@ -1992,7 +1992,7 @@ export default function VideoEditor() {
 						}`}
 					>
 						<Wand2 className="h-3.5 w-3.5 text-purple-300" />
-						Smart Demo
+						Smart Screen
 					</button>
 					<button
 						type="button"
