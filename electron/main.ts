@@ -177,7 +177,7 @@ function updateTrayMenu(recording: boolean = false, paused: boolean = false) {
 	const trayIcon = recording ? recordingTrayIcon : defaultTrayIcon;
 	const trayToolTip = recording
 		? `${paused ? "Paused" : "Recording"}: ${selectedSourceName}`
-		: "OpenScreen";
+		: "OpenScreen Smart Demo";
 	const menuTemplate = recording
 		? [
 				{

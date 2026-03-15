@@ -212,8 +212,8 @@ Not every “smart” feature is AI. The local pipeline is still valuable on its
 
 ## Attribution
 
-Built on top of **OpenScreen**
+Maintained by **SaiVaraprasad Medapati**
 
-- Original repository: [siddharthvaddem/openscreen](https://github.com/siddharthvaddem/openscreen)
-- Original author: [@siddharthvaddem](https://github.com/siddharthvaddem)
+- Repository: [varaprasadreddy9676/openscreen-smart-demo](https://github.com/varaprasadreddy9676/openscreen-smart-demo)
+- Forked from: [siddharthvaddem/openscreen](https://github.com/siddharthvaddem/openscreen)
 - License: MIT

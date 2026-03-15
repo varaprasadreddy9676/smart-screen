@@ -887,10 +887,10 @@ export function registerIpcHandlers(
 					: `${safeName}.${PROJECT_FILE_EXTENSION}`;
 
 				const result = await dialog.showSaveDialog({
-					title: "Save OpenScreen Project",
+					title: "Save OpenScreen Smart Demo Project",
 					defaultPath: path.join(RECORDINGS_DIR, defaultName),
 					filters: [
-						{ name: "OpenScreen Project", extensions: [PROJECT_FILE_EXTENSION] },
+						{ name: "OpenScreen Smart Demo Project", extensions: [PROJECT_FILE_EXTENSION] },
 						{ name: "JSON", extensions: ["json"] },
 					],
 					properties: ["createDirectory", "showOverwriteConfirmation"],
@@ -926,10 +926,10 @@ export function registerIpcHandlers(
 	ipcMain.handle("load-project-file", async () => {
 		try {
 			const result = await dialog.showOpenDialog({
-				title: "Open OpenScreen Project",
+				title: "Open OpenScreen Smart Demo Project",
 				defaultPath: RECORDINGS_DIR,
 				filters: [
-					{ name: "OpenScreen Project", extensions: [PROJECT_FILE_EXTENSION] },
+					{ name: "OpenScreen Smart Demo Project", extensions: [PROJECT_FILE_EXTENSION] },
 					{ name: "JSON", extensions: ["json"] },
 					{ name: "All Files", extensions: ["*"] },
 				],

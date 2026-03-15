@@ -96,7 +96,7 @@ struct MouseClickMonitor {
 		}
 
 		guard requestAccessibilityTrust() else {
-			emitJSON(ErrorPayload(type: "error", error: "Accessibility permission was denied. Enable OpenScreen in System Settings > Privacy & Security > Accessibility."))
+			emitJSON(ErrorPayload(type: "error", error: "Accessibility permission was denied. Enable OpenScreen Smart Demo in System Settings > Privacy & Security > Accessibility."))
 			exit(1)
 		}
 

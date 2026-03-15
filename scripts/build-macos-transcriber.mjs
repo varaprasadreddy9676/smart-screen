@@ -19,11 +19,11 @@ const helperDefinitions = [
 		plistEntries: [
 			[
 				"NSMicrophoneUsageDescription",
-				"OpenScreen can include microphone audio in recordings and use it for narration transcription.",
+				"OpenScreen Smart Demo can include microphone audio in recordings and use it for narration transcription.",
 			],
 			[
 				"NSSpeechRecognitionUsageDescription",
-				"OpenScreen uses speech recognition to transcribe narration in your recordings.",
+				"OpenScreen Smart Demo uses speech recognition to transcribe narration in your recordings.",
 			],
 		],
 	},
@@ -82,7 +82,7 @@ function renderInfoPlist(helper) {
   <key>CFBundleExecutable</key>
   <string>${helper.name}</string>
   <key>CFBundleIdentifier</key>
-  <string>com.siddharthvaddem.openscreen.${bundleSuffix}</string>
+  <string>com.varaprasadreddy9676.openscreensmartdemo.${bundleSuffix}</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
