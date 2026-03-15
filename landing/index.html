@@ -287,6 +287,68 @@
 
     .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 44px; }
 
+    .hero-download {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 44px;
+      align-items: flex-start;
+    }
+
+    .hero-download-picks {
+      display: inline-flex;
+      gap: 8px;
+      padding: 6px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .hero-pick {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-2);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+      text-align: left;
+      min-width: 126px;
+    }
+    .hero-pick:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+    }
+    .hero-pick.active {
+      background: rgba(52,178,123,0.12);
+      border-color: rgba(52,178,123,0.28);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+    .hero-pick strong {
+      display: block;
+      font-size: 12px;
+      color: inherit;
+    }
+    .hero-pick span {
+      display: block;
+      margin-top: 3px;
+      font-size: 10px;
+      color: var(--text-3);
+    }
+
+    .hero-download-note {
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: var(--mono);
+      padding-left: 2px;
+    }
+
     .btn-p {
       display: inline-flex;
       align-items: center;
@@ -1034,12 +1096,37 @@
       <p class="hero-desc" data-r data-d="2">
         Record once, then let Smart Screen understand your clicks, narration, and workflow. Add polished zooms, captions, trims, and callouts without giving up control of the final edit.
       </p>
-      <div class="hero-ctas" data-r data-d="3">
-        <a href="https://github.com/varaprasadreddy9676/smart-screen/releases/tag/v1.1.3" class="btn-p" target="_blank" rel="noopener">
+      <div class="hero-download" data-r data-d="3">
+        <div class="hero-download-picks" role="tablist" aria-label="Download target">
+          <button type="button" class="hero-pick active" data-download-target="arm64">
+            <strong>Apple Silicon</strong>
+            <span>M1, M2, M3, M4</span>
+          </button>
+          <button type="button" class="hero-pick" data-download-target="x64">
+            <strong>Intel Mac</strong>
+            <span>x64 installer</span>
+          </button>
+          <button type="button" class="hero-pick" data-download-target="release">
+            <strong>All downloads</strong>
+            <span>Release page</span>
+          </button>
+        </div>
+        <div class="hero-ctas">
+        <a
+          href="https://github.com/varaprasadreddy9676/smart-screen/releases/download/v1.1.3/Smart.Screen-Mac-arm64-1.1.3-Installer.dmg"
+          class="btn-p"
+          target="_blank"
+          rel="noopener"
+          id="heroDownloadButton"
+        >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.165 6.839 9.489.5.09.682-.218.682-.484 0-.237-.009-.868-.013-1.703-2.782.603-3.369-1.341-3.369-1.341-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.645.35-1.087.636-1.337-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.03-2.682-.103-.253-.447-1.27.098-2.646 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.547 1.376.203 2.393.1 2.646.64.698 1.028 1.59 1.028 2.682 0 3.841-2.337 4.687-4.565 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .269.18.579.688.481C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
-          Download for macOS
+          Download for Apple Silicon
         </a>
         <a href="#how" class="btn-o">See the workflow →</a>
+        </div>
+        <div class="hero-download-note" id="heroDownloadNote">
+          macOS arm64 installer · v1.1.3 release asset
+        </div>
       </div>
       <div class="hero-chips" data-r data-d="4">
         <span class="chip"><span class="chip-dot"></span>Click-aware editing</span>
@@ -1494,6 +1581,23 @@
   const parallaxNodes = prefersReducedMotion ? [] : [...document.querySelectorAll('[data-parallax]')];
   const root = document.documentElement;
   let ticking = false;
+  const downloadTargets = {
+    arm64: {
+      href: 'https://github.com/varaprasadreddy9676/smart-screen/releases/download/v1.1.3/Smart.Screen-Mac-arm64-1.1.3-Installer.dmg',
+      label: 'Download for Apple Silicon',
+      note: 'macOS arm64 installer · v1.1.3 release asset',
+    },
+    x64: {
+      href: 'https://github.com/varaprasadreddy9676/smart-screen/releases/download/v1.1.3/Smart.Screen-Mac-x64-1.1.3-Installer.dmg',
+      label: 'Download for Intel Mac',
+      note: 'macOS x64 installer · v1.1.3 release asset',
+    },
+    release: {
+      href: 'https://github.com/varaprasadreddy9676/smart-screen/releases/tag/v1.1.3',
+      label: 'Open Downloads',
+      note: 'GitHub release with both DMGs and blockmaps',
+    },
+  };
 
   function updateMotion() {
     const scrollTop = window.scrollY || window.pageYOffset;
@@ -1523,6 +1627,33 @@
     }, { passive: true });
     window.addEventListener('resize', updateMotion);
   }
+
+  // ── Hero download picker ────────────────────────
+  const heroDownloadButton = document.getElementById('heroDownloadButton');
+  const heroDownloadNote = document.getElementById('heroDownloadNote');
+  const heroPicks = [...document.querySelectorAll('[data-download-target]')];
+
+  function setDownloadTarget(target) {
+    const config = downloadTargets[target] || downloadTargets.arm64;
+    heroPicks.forEach((pick) => pick.classList.toggle('active', pick.dataset.downloadTarget === target));
+    if (heroDownloadButton) {
+      heroDownloadButton.href = config.href;
+      heroDownloadButton.lastChild.textContent = ` ${config.label}`;
+    }
+    if (heroDownloadNote) {
+      heroDownloadNote.textContent = config.note;
+    }
+  }
+
+  heroPicks.forEach((pick) => {
+    pick.addEventListener('click', () => setDownloadTarget(pick.dataset.downloadTarget));
+  });
+
+  const platform = navigator.platform || '';
+  const ua = navigator.userAgent || '';
+  const prefersIntel =
+    platform.includes('MacIntel') && !ua.includes('ARM') && !ua.includes('AppleSilicon');
+  setDownloadTarget(prefersIntel ? 'x64' : 'arm64');
 
   // ── Hero tilt ────────────────────────────────────
   const heroStack = document.getElementById('heroStack');
