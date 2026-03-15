@@ -123,9 +123,7 @@ The strongest demo path is:
 7. **Optional AI Refinement** — open AI Assist to further refine suggestions (if OpenAI or Ollama configured).
 8. **Export** — choose MP4 or GIF with burned-in captions, applied effects, and overlays.
 
-For a ready-to-use judging script, see [HACKATHON_DEMO.md](/Users/sai/Documents/GitHub/openscreen-smart-demo/HACKATHON_DEMO.md).
-
-For a concise submission brief, see [HACKATHON_SUBMISSION.md](/Users/sai/Documents/GitHub/openscreen-smart-demo/HACKATHON_SUBMISSION.md).
+For a ready-to-use judging script, see [HACKATHON_DEMO.md](./HACKATHON_DEMO.md).
 
 ## Data Flow
 
@@ -214,6 +212,6 @@ Not every “smart” feature is AI. The local pipeline is still valuable on its
 
 Maintained by **SaiVaraprasad Medapati**
 
-- Repository: [varaprasadreddy9676/openscreen-smart-demo](https://github.com/varaprasadreddy9676/openscreen-smart-demo)
+- Repository: [varaprasadreddy9676/smart-screen](https://github.com/varaprasadreddy9676/smart-screen)
 - Forked from: [siddharthvaddem/openscreen](https://github.com/siddharthvaddem/openscreen)
 - License: MIT
