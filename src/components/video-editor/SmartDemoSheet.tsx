@@ -12,10 +12,7 @@ export function SmartDemoSheet({ open, onClose, children }: SmartDemoSheetProps)
 		<>
 			{/* Backdrop */}
 			{open && (
-				<div
-					className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-					onClick={onClose}
-				/>
+				<div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 			)}
 
 			{/* Slide-over panel */}

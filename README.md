@@ -69,9 +69,24 @@ This project is designed to work in three modes:
 - zoom regions
 - trim regions
 - speed regions
-- annotations
+- caption/transcript track
 - crop / padding / wallpaper
 - before / after preview mode
+- keyboard shortcuts customization
+- playback speed control
+- preset backgrounds and effects
+
+### Transcription & Captions
+
+- auto-transcription from microphone audio via MacOSTranscriber.app
+- import transcript from common formats (SRT, VTT, plain text)
+- transcript review and editing dialog with millisecond-precision timestamps
+- caption styling: font size, vertical offset, text color, background color
+- preset caption styles (Dark, Light, None)
+- SRT / VTT export
+- caption preview in video player with YouTube-style CC toggle button
+- burned-in captions for MP4 and GIF exports
+- dedicated "CC" row in timeline editor; click to seek
 
 ### Smart Demo
 
@@ -79,22 +94,14 @@ This project is designed to work in three modes:
 - calmer auto-zoom planning
 - transcript-aware callouts
 - one-click `Polish Demo`
+- Smart Demo panel as slide-over sheet (accessible from top-bar icon)
 - speech-aware AI refinement
 
-### Transcript And Captions
+### AI Assist (Optional BYOK)
 
-- import transcript from common formats
-- built-in transcription backends
-- transcript review / editing
-- SRT / VTT export
-- preview captions
-- burned-in captions for export
-
-### AI Assist
-
-- BYOK provider settings
-- OpenAI support
-- Ollama support
+- BYOK provider settings with secure secret storage
+- OpenAI support for AI-powered Smart Demo analysis
+- Ollama support for on-device inference
 - local Ollama model discovery
 - model guidance for base vs instruction vs vision-capable models
 - AI-generated summaries, step titles, zooms, trims, and focus moments
@@ -103,50 +110,49 @@ This project is designed to work in three modes:
 
 The strongest demo path is:
 
-1. Record a narrated walkthrough.
-2. Open the editor and show `Original Preview`.
-3. Transcribe audio or import a transcript.
-4. Run `One-Click Polish Demo`.
-5. Show `Polished Preview`.
-6. Open `AI Assist` and refine further.
-7. Export MP4 + captions.
+1. **Record** a narrated walkthrough (video + audio + native click/keystroke telemetry captured).
+2. **Editor Opens** — recording is auto-loaded with:
+   - Local Smart Demo analysis (click, typing, navigation, silence detection)
+   - Auto-transcription if `.transcription.wav` sidecar exists
+3. **Show Original Preview** — demonstrate the raw recording alongside timeline.
+4. **Review Transcript** — edit captions and timestamps in the transcript review dialog.
+5. **Smart Demo Panel** — open the slide-over sheet to:
+   - Tune caption styling (font, size, color, presets)
+   - Apply one-click `Polish Demo` (auto-zooms, trims, silences removed)
+6. **Show Polished Preview** — display the transformed version side-by-side with Original.
+7. **Optional AI Refinement** — open AI Assist to further refine suggestions (if OpenAI or Ollama configured).
+8. **Export** — choose MP4 or GIF with burned-in captions, applied effects, and overlays.
 
 For a ready-to-use judging script, see [HACKATHON_DEMO.md](/Users/sai/Documents/GitHub/openscreen-smart-demo/HACKATHON_DEMO.md).
 
 For a concise submission brief, see [HACKATHON_SUBMISSION.md](/Users/sai/Documents/GitHub/openscreen-smart-demo/HACKATHON_SUBMISSION.md).
 
-## Architecture
+## Data Flow
 
 ```text
-Record screen
-  ->
-Capture video + cursor telemetry + optional mic audio
-  ->
-Open editor with recording sidecars
-  ->
-Run local Smart Demo analysis
-  ->
-Optionally run BYOK AI refinement
-  ->
-Apply zooms / trims / captions / callouts / overlays
-  ->
-Export MP4 or GIF
+Record screen + audio + native events (clicks, keystrokes)
+  |
+  → Save as .webm video + .webm.cursor.json + .transcription.wav sidecars
+  |
+Open editor with recording
+  |
+  → Load video, cursor telemetry, auto-transcribe if .transcription.wav exists
+  |
+Local Smart Demo analysis
+  |
+  → Detect clicks, typing, inactivity, navigation patterns
+  → Generate suggested zooms, trims, focus moments
+  |
+Review & edit transcript (timestamps, captions)
+  |
+Optional BYOK AI refinement (if OpenAI or Ollama configured)
+  |
+Apply edits: zooms, trims, captions, speed changes, overlays
+  |
+Export MP4 or GIF with captions, click emphasis, keystroke display
 ```
 
-Main subsystems:
-
-- `electron/`
-  main process, secure storage, IPC, native telemetry, transcription backends
-- `shared/`
-  shared cross-process AI and transcription contracts
-- `src/smart-demo/`
-  local heuristic Smart Demo pipeline
-- `src/lib/ai/`
-  AI request building, grounding, transcript parsing, suggestion mapping
-- `src/components/video-editor/`
-  editor UI, playback, timeline, transcript review, AI settings
-- `src/lib/exporter/`
-  export pipeline, captions, keystrokes, click emphasis
+For detailed architecture and code module locations, see [CLAUDE.md](CLAUDE.md).
 
 ## Providers And Transcription
 

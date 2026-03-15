@@ -1,3 +1,4 @@
+import type { TranscriptSegment } from "@shared/ai";
 import type { Range, Span } from "dnd-timeline";
 import { useTimelineContext } from "dnd-timeline";
 import {
@@ -39,9 +40,9 @@ import KeyframeMarkers from "./KeyframeMarkers";
 import Row from "./Row";
 import TimelineWrapper from "./TimelineWrapper";
 import {
-	ANNOTATION_ROW_ID,
 	buildTimelineItems,
 	buildTimelineRegionSpans,
+	CAPTION_ROW_ID,
 	filterTimelineItemsByRange,
 	partitionTimelineItems,
 	SPEED_ROW_ID,
@@ -86,6 +87,8 @@ interface TimelineEditorProps {
 	onSpeedDelete?: (id: string) => void;
 	selectedSpeedId?: string | null;
 	onSelectSpeed?: (id: string | null) => void;
+	captionSegments?: TranscriptSegment[];
+	onSelectCaption?: (id: string | null) => void;
 	aspectRatio: AspectRatio;
 	onAspectRatioChange: (aspectRatio: AspectRatio) => void;
 }
@@ -436,10 +439,11 @@ function Timeline({
 	onSelectTrim,
 	onSelectAnnotation,
 	onSelectSpeed,
+	onSelectCaption,
 	selectedZoomId,
 	selectedTrimId,
-	selectedAnnotationId,
 	selectedSpeedId,
+	selectedCaptionId,
 	keyframes = [],
 }: {
 	items: TimelineRenderItem[];
@@ -451,10 +455,11 @@ function Timeline({
 	onSelectTrim?: (id: string | null) => void;
 	onSelectAnnotation?: (id: string | null) => void;
 	onSelectSpeed?: (id: string | null) => void;
+	onSelectCaption?: (id: string | null) => void;
 	selectedZoomId: string | null;
 	selectedTrimId?: string | null;
-	selectedAnnotationId?: string | null;
 	selectedSpeedId?: string | null;
+	selectedCaptionId?: string | null;
 	keyframes?: { id: string; time: number }[];
 }) {
 	const { setTimelineRef, style, sidebarWidth, range, pixelsToValue } = useTimelineContext();
@@ -478,6 +483,7 @@ function Timeline({
 			onSelectTrim?.(null);
 			onSelectAnnotation?.(null);
 			onSelectSpeed?.(null);
+			onSelectCaption?.(null);
 
 			const rect = e.currentTarget.getBoundingClientRect();
 			const clickX = e.clientX - rect.left - sidebarWidth;
@@ -531,16 +537,17 @@ function Timeline({
 			<TimelineRows
 				zoomItems={visiblePartitionedItems.zoomItems}
 				trimItems={visiblePartitionedItems.trimItems}
-				annotationItems={visiblePartitionedItems.annotationItems}
+				captionItems={visiblePartitionedItems.captionItems}
 				speedItems={visiblePartitionedItems.speedItems}
 				selectedZoomId={selectedZoomId}
 				selectedTrimId={selectedTrimId}
-				selectedAnnotationId={selectedAnnotationId}
+				selectedCaptionId={selectedCaptionId}
 				selectedSpeedId={selectedSpeedId}
 				onSelectZoom={onSelectZoom}
 				onSelectTrim={onSelectTrim}
-				onSelectAnnotation={onSelectAnnotation}
+				onSelectCaption={onSelectCaption}
 				onSelectSpeed={onSelectSpeed}
+				onSeekToCaption={(startMs) => onSeek?.(startMs / 1000)}
 			/>
 		</div>
 	);
@@ -549,25 +556,27 @@ function Timeline({
 const TimelineRows = memo(function TimelineRows({
 	zoomItems,
 	trimItems,
-	annotationItems,
+	captionItems,
 	speedItems,
 	selectedZoomId,
 	selectedTrimId,
-	selectedAnnotationId,
+	selectedCaptionId,
 	selectedSpeedId,
 	onSelectZoom,
 	onSelectTrim,
-	onSelectAnnotation,
+	onSelectCaption,
 	onSelectSpeed,
-}: TimelinePartitionedItems & {
+	onSeekToCaption,
+}: Omit<TimelinePartitionedItems, "annotationItems"> & {
 	selectedZoomId: string | null;
 	selectedTrimId?: string | null;
-	selectedAnnotationId?: string | null;
+	selectedCaptionId?: string | null;
 	selectedSpeedId?: string | null;
 	onSelectZoom?: (id: string | null) => void;
 	onSelectTrim?: (id: string | null) => void;
-	onSelectAnnotation?: (id: string | null) => void;
+	onSelectCaption?: (id: string | null) => void;
 	onSelectSpeed?: (id: string | null) => void;
+	onSeekToCaption?: (startMs: number) => void;
 }) {
 	return (
 		<>
@@ -605,19 +614,23 @@ const TimelineRows = memo(function TimelineRows({
 			</Row>
 
 			<Row
-				id={ANNOTATION_ROW_ID}
-				isEmpty={annotationItems.length === 0}
-				hint="Press A to add annotation"
+				id={CAPTION_ROW_ID}
+				label="CC"
+				isEmpty={captionItems.length === 0}
+				hint="Transcribe audio to see captions"
 			>
-				{annotationItems.map((item) => (
+				{captionItems.map((item) => (
 					<Item
 						id={item.id}
 						key={item.id}
 						rowId={item.rowId}
 						span={item.span}
-						isSelected={item.id === selectedAnnotationId}
-						onSelect={() => onSelectAnnotation?.(item.id)}
-						variant="annotation"
+						isSelected={item.id === selectedCaptionId}
+						onSelect={() => {
+							onSelectCaption?.(item.id);
+							onSeekToCaption?.(item.span.start);
+						}}
+						variant="caption"
 					>
 						{item.label}
 					</Item>
@@ -674,6 +687,8 @@ export default function TimelineEditor({
 	onSpeedDelete,
 	selectedSpeedId,
 	onSelectSpeed,
+	captionSegments = [],
+	onSelectCaption,
 	aspectRatio,
 	onAspectRatioChange,
 }: TimelineEditorProps) {
@@ -691,6 +706,7 @@ export default function TimelineEditor({
 	const [range, setRange] = useState<Range>(() => createInitialRange(totalMs));
 	const [keyframes, setKeyframes] = useState<{ id: string; time: number }[]>([]);
 	const [selectedKeyframeId, setSelectedKeyframeId] = useState<string | null>(null);
+	const [selectedCaptionId, setSelectedCaptionId] = useState<string | null>(null);
 	const [scrollLabels, setScrollLabels] = useState({
 		pan: "Shift + Ctrl + Scroll",
 		zoom: "Ctrl + Scroll",
@@ -1172,8 +1188,9 @@ export default function TimelineEditor({
 				trimRegions,
 				annotationRegions,
 				speedRegions,
+				captionSegments,
 			}),
-		[zoomRegions, trimRegions, annotationRegions, speedRegions],
+		[zoomRegions, trimRegions, annotationRegions, speedRegions, captionSegments],
 	);
 
 	// Flat list of all non-annotation region spans for neighbour-clamping during drag/resize
@@ -1354,10 +1371,14 @@ export default function TimelineEditor({
 						onSelectTrim={onSelectTrim}
 						onSelectAnnotation={onSelectAnnotation}
 						onSelectSpeed={onSelectSpeed}
+						onSelectCaption={(id) => {
+							setSelectedCaptionId(id);
+							onSelectCaption?.(id);
+						}}
 						selectedZoomId={selectedZoomId}
 						selectedTrimId={selectedTrimId}
-						selectedAnnotationId={selectedAnnotationId}
 						selectedSpeedId={selectedSpeedId}
+						selectedCaptionId={selectedCaptionId}
 						keyframes={keyframes}
 					/>
 				</TimelineWrapper>

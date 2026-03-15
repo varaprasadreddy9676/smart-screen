@@ -2149,6 +2149,7 @@ export default function VideoEditor() {
 									onAnnotationDelete={handleAnnotationDelete}
 									selectedAnnotationId={selectedAnnotationId}
 									onSelectAnnotation={handleSelectAnnotation}
+									captionSegments={transcriptSegments}
 									aspectRatio={aspectRatio}
 									onAspectRatioChange={setAspectRatio}
 								/>

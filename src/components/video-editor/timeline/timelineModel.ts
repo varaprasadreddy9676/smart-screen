@@ -1,3 +1,4 @@
+import type { TranscriptSegment } from "@shared/ai";
 import type { Range, Span } from "dnd-timeline";
 import type { AnnotationRegion, SpeedRegion, TrimRegion, ZoomRegion } from "../types";
 
@@ -5,6 +6,7 @@ export const ZOOM_ROW_ID = "row-zoom";
 export const TRIM_ROW_ID = "row-trim";
 export const ANNOTATION_ROW_ID = "row-annotation";
 export const SPEED_ROW_ID = "row-speed";
+export const CAPTION_ROW_ID = "row-caption";
 const MIN_VISIBLE_OVERSCAN_MS = 1200;
 const MAX_VISIBLE_OVERSCAN_MS = 8000;
 const VISIBLE_OVERSCAN_RATIO = 0.2;
@@ -16,7 +18,7 @@ export interface TimelineRenderItem {
 	label: string;
 	zoomDepth?: number;
 	speedValue?: number;
-	variant: "zoom" | "trim" | "annotation" | "speed";
+	variant: "zoom" | "trim" | "annotation" | "speed" | "caption";
 }
 
 export interface TimelinePartitionedItems {
@@ -24,6 +26,7 @@ export interface TimelinePartitionedItems {
 	trimItems: TimelineRenderItem[];
 	annotationItems: TimelineRenderItem[];
 	speedItems: TimelineRenderItem[];
+	captionItems: TimelineRenderItem[];
 }
 
 function getAnnotationLabel(region: AnnotationRegion) {
@@ -44,11 +47,13 @@ export function buildTimelineItems({
 	trimRegions,
 	annotationRegions,
 	speedRegions,
+	captionSegments = [],
 }: {
 	zoomRegions: ZoomRegion[];
 	trimRegions: TrimRegion[];
 	annotationRegions: AnnotationRegion[];
 	speedRegions: SpeedRegion[];
+	captionSegments?: TranscriptSegment[];
 }): TimelineRenderItem[] {
 	const zooms: TimelineRenderItem[] = zoomRegions.map((region, index) => ({
 		id: region.id,
@@ -84,7 +89,15 @@ export function buildTimelineItems({
 		variant: "speed",
 	}));
 
-	return [...zooms, ...trims, ...annotations, ...speeds];
+	const captions: TimelineRenderItem[] = captionSegments.map((segment) => ({
+		id: segment.id,
+		rowId: CAPTION_ROW_ID,
+		span: { start: segment.startMs, end: segment.endMs },
+		label: segment.text.length > 30 ? `${segment.text.substring(0, 30)}\u2026` : segment.text,
+		variant: "caption",
+	}));
+
+	return [...zooms, ...trims, ...annotations, ...speeds, ...captions];
 }
 
 export function buildTimelineRegionSpans({
@@ -137,6 +150,7 @@ export function partitionTimelineItems(items: TimelineRenderItem[]): TimelinePar
 		trimItems: [],
 		annotationItems: [],
 		speedItems: [],
+		captionItems: [],
 	};
 
 	for (const item of items) {
@@ -152,6 +166,9 @@ export function partitionTimelineItems(items: TimelineRenderItem[]): TimelinePar
 				break;
 			case SPEED_ROW_ID:
 				partitioned.speedItems.push(item);
+				break;
+			case CAPTION_ROW_ID:
+				partitioned.captionItems.push(item);
 				break;
 		}
 	}
