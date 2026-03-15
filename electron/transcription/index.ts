@@ -9,7 +9,7 @@ import type {
 import { err, ok } from "../../shared/ai";
 import { aiConfigStore } from "../ai/store";
 import type { TranscriptionContext, TranscriptionProvider } from "./providers/base";
-import { ElectronNativeSpeechProvider as MacOSNativeTranscriptionProvider } from "./providers/electronNativeSpeech";
+import { MacOSNativeTranscriptionProvider } from "./providers/macosNative";
 import { OpenAITranscriptionProvider } from "./providers/openai";
 import { transcriptionConfigStore } from "./store";
 

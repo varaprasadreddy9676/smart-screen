@@ -15,13 +15,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { useShortcuts } from "@/contexts/ShortcutsContext";
-import {
-	applySmartDemoAISuggestion,
-	isAIManagedRegionId,
-	mapAISuggestionTrimRegions,
-	mapAISuggestionZoomRegions,
-} from "@/lib/ai/applySmartDemoAISuggestion";
-import { buildSmartDemoAIRequest } from "@/lib/ai/buildSmartDemoAIRequest";
+import { isAIManagedRegionId } from "@/lib/ai/applySmartDemoAISuggestion";
 import { analyzeSpeechGrounding } from "@/lib/ai/speechGrounding";
 import { parseTranscriptFileContent } from "@/lib/ai/transcriptFormats";
 import { getAssetPath } from "@/lib/assetPath";
@@ -39,11 +33,6 @@ import {
 } from "@/lib/exporter";
 import { matchesShortcut } from "@/lib/shortcuts";
 import { buildDemoPolishPlan } from "@/lib/smartDemo/polishDemo";
-import {
-	type SubtitleFormat,
-	serializeTranscriptAsSrt,
-	serializeTranscriptAsVtt,
-} from "@/lib/subtitles";
 import { SmartDemoPanel } from "@/ui/SmartDemoPanel";
 import { type AspectRatio, getAspectRatioValue } from "@/utils/aspectRatioUtils";
 import { AISettingsDialog } from "./AISettingsDialog";
@@ -68,7 +57,6 @@ import {
 	type CropRegion,
 	type CursorClickPulseSettings,
 	type CursorTelemetryPoint,
-	DEFAULT_KEYSTROKE_OVERLAY_SETTINGS,
 	clampFocusToDepth,
 	DEFAULT_ANNOTATION_POSITION,
 	DEFAULT_ANNOTATION_SIZE,
@@ -77,6 +65,7 @@ import {
 	DEFAULT_CROP_REGION,
 	DEFAULT_CURSOR_CLICK_PULSE_SETTINGS,
 	DEFAULT_FIGURE_DATA,
+	DEFAULT_KEYSTROKE_OVERLAY_SETTINGS,
 	DEFAULT_PLAYBACK_SPEED,
 	DEFAULT_ZOOM_DEPTH,
 	DEFAULT_ZOOM_MOTION_BLUR,
@@ -117,9 +106,8 @@ export default function VideoEditor() {
 	const [keystrokeTelemetry, setKeystrokeTelemetry] = useState<KeystrokeTelemetryEvent[]>([]);
 	const [smartDemoAutoMode, setSmartDemoAutoMode] = useState(false);
 	const [aiConfig, setAIConfig] = useState<PublicAIConfig | null>(null);
-	const [aiPrompt, setAIPrompt] = useState("");
 	const [aiSuggestion, setAISuggestion] = useState<SmartDemoAISuggestion | null>(null);
-	const [aiStatus, setAIStatus] = useState<"idle" | "analyzing" | "error">("idle");
+	const [, setAIStatus] = useState<"idle" | "analyzing" | "error">("idle");
 	const [aiError, setAIError] = useState<string | null>(null);
 	const [transcriptSegments, setTranscriptSegments] = useState<TranscriptSegment[]>([]);
 	const [transcriptSourceLabel, setTranscriptSourceLabel] = useState<string | null>(null);
@@ -128,12 +116,10 @@ export default function VideoEditor() {
 	>("idle");
 	const [transcriptError, setTranscriptError] = useState<string | null>(null);
 	const [captionSettings, setCaptionSettings] = useState<CaptionSettings>(DEFAULT_CAPTION_SETTINGS);
-	const [cursorClickPulseSettings, setCursorClickPulseSettings] = useState<CursorClickPulseSettings>(
-		DEFAULT_CURSOR_CLICK_PULSE_SETTINGS,
-	);
-	const [keystrokeOverlaySettings, setKeystrokeOverlaySettings] = useState<KeystrokeOverlaySettings>(
-		DEFAULT_KEYSTROKE_OVERLAY_SETTINGS,
-	);
+	const [cursorClickPulseSettings, setCursorClickPulseSettings] =
+		useState<CursorClickPulseSettings>(DEFAULT_CURSOR_CLICK_PULSE_SETTINGS);
+	const [keystrokeOverlaySettings, setKeystrokeOverlaySettings] =
+		useState<KeystrokeOverlaySettings>(DEFAULT_KEYSTROKE_OVERLAY_SETTINGS);
 	const [transcriptionConfig, setTranscriptionConfig] = useState<PublicTranscriptionConfig>({
 		provider: "auto",
 		enabled: true,
@@ -141,8 +127,7 @@ export default function VideoEditor() {
 	const [transcriptionOptions, setTranscriptionOptions] = useState<TranscriptionProviderOption[]>(
 		[],
 	);
-	const [nativeClickCaptureStatus, setNativeClickCaptureStatus] =
-		useState<NativeClickCaptureStatus | null>(null);
+
 	const [showTranscriptReview, setShowTranscriptReview] = useState(false);
 	const [showAISettings, setShowAISettings] = useState(false);
 	const [isSavingAIConfig, setIsSavingAIConfig] = useState(false);
@@ -180,6 +165,7 @@ export default function VideoEditor() {
 	const exporterRef = useRef<VideoExporter | null>(null);
 	const lastTranscriptVideoSourceRef = useRef<string | null>(null);
 	const isRestoringHistoryRef = useRef(false);
+	const shouldAutoTranscribeRef = useRef(false);
 	const lastHistorySnapshotRef = useRef<string | null>(null);
 
 	const buildEditorState = useCallback((): ProjectEditorState => {
@@ -284,42 +270,45 @@ export default function VideoEditor() {
 			editor.annotationRegions.reduce((max, region) => Math.max(max, region.zIndex), 0) + 1;
 	}, []);
 
-	const applyLoadedProject = useCallback(async (candidate: unknown, path?: string | null) => {
-		if (!validateProjectData(candidate)) {
-			return false;
-		}
+	const applyLoadedProject = useCallback(
+		async (candidate: unknown, path?: string | null) => {
+			if (!validateProjectData(candidate)) {
+				return false;
+			}
 
-		const project = candidate;
-		const sourcePath = project.videoPath;
-		const normalizedEditor = normalizeProjectEditor(project.editor);
+			const project = candidate;
+			const sourcePath = project.videoPath;
+			const normalizedEditor = normalizeProjectEditor(project.editor);
 
-		try {
-			videoPlaybackRef.current?.pause();
-		} catch {
-			// no-op
-		}
-		setIsPlaying(false);
-		setCurrentTime(0);
-		setDuration(0);
+			try {
+				videoPlaybackRef.current?.pause();
+			} catch {
+				// no-op
+			}
+			setIsPlaying(false);
+			setCurrentTime(0);
+			setDuration(0);
 
-		setError(null);
-		setVideoSourcePath(sourcePath);
-		setVideoPath(toFileUrl(sourcePath));
-		setCurrentProjectPath(path ?? null);
-		applyEditorState(normalizedEditor);
-		setTranscriptSourceLabel(
-			normalizedEditor.transcriptSegments.length > 0 ? "Saved project transcript" : null,
-		);
-		setTranscriptStatus(normalizedEditor.transcriptSegments.length > 0 ? "ready" : "idle");
-		setTranscriptError(null);
+			setError(null);
+			setVideoSourcePath(sourcePath);
+			setVideoPath(toFileUrl(sourcePath));
+			setCurrentProjectPath(path ?? null);
+			applyEditorState(normalizedEditor);
+			setTranscriptSourceLabel(
+				normalizedEditor.transcriptSegments.length > 0 ? "Saved project transcript" : null,
+			);
+			setTranscriptStatus(normalizedEditor.transcriptSegments.length > 0 ? "ready" : "idle");
+			setTranscriptError(null);
 
-		setLastSavedSnapshot(JSON.stringify(createProjectData(sourcePath, normalizedEditor)));
-		const restoredSnapshot = JSON.stringify(normalizedEditor);
-		lastHistorySnapshotRef.current = restoredSnapshot;
-		setUndoStack([]);
-		setRedoStack([]);
-		return true;
-	}, [applyEditorState]);
+			setLastSavedSnapshot(JSON.stringify(createProjectData(sourcePath, normalizedEditor)));
+			const restoredSnapshot = JSON.stringify(normalizedEditor);
+			lastHistorySnapshotRef.current = restoredSnapshot;
+			setUndoStack([]);
+			setRedoStack([]);
+			return true;
+		},
+		[applyEditorState],
+	);
 
 	const currentProjectSnapshot = useMemo(() => {
 		const sourcePath = videoSourcePath ?? (videoPath ? fromFileUrl(videoPath) : null);
@@ -327,13 +316,12 @@ export default function VideoEditor() {
 			return null;
 		}
 		return JSON.stringify(createProjectData(sourcePath, buildEditorState()));
-	}, [
-		videoSourcePath,
-		videoPath,
-		buildEditorState,
-	]);
+	}, [videoSourcePath, videoPath, buildEditorState]);
 
-	const currentEditorSnapshot = useMemo(() => JSON.stringify(buildEditorState()), [buildEditorState]);
+	const currentEditorSnapshot = useMemo(
+		() => JSON.stringify(buildEditorState()),
+		[buildEditorState],
+	);
 
 	useEffect(() => {
 		if (loading) {
@@ -384,17 +372,9 @@ export default function VideoEditor() {
 		() => transcriptionOptions.find((option) => option.id === transcriptionConfig.provider) ?? null,
 		[transcriptionConfig.provider, transcriptionOptions],
 	);
-	const nativeClickTelemetryCount = useMemo(
-		() =>
-			cursorTelemetry.filter(
-				(sample) =>
-					isClickTelemetryPoint(sample) && sample.phase === "down" && sample.source === "native",
-			).length,
-		[cursorTelemetry],
-	);
-	const usesNativeClickTelemetry = nativeClickTelemetryCount > 0;
 	const hasClickTelemetry = useMemo(
-		() => cursorTelemetry.some((sample) => isClickTelemetryPoint(sample) && sample.phase === "down"),
+		() =>
+			cursorTelemetry.some((sample) => isClickTelemetryPoint(sample) && sample.phase === "down"),
 		[cursorTelemetry],
 	);
 
@@ -422,6 +402,9 @@ export default function VideoEditor() {
 					setTranscriptSourceLabel(null);
 					setTranscriptStatus("idle");
 					setTranscriptError(null);
+					if ((result as { hasSidecar?: boolean }).hasSidecar) {
+						shouldAutoTranscribeRef.current = true;
+					}
 				} else {
 					setError("No video to load. Please record or select a video.");
 				}
@@ -474,11 +457,6 @@ export default function VideoEditor() {
 		}
 	}, []);
 
-	const loadNativeClickCaptureStatus = useCallback(async () => {
-		const result = await window.electronAPI.getNativeClickCaptureStatus();
-		setNativeClickCaptureStatus(result);
-	}, []);
-
 	const resetAIInsightState = useCallback(() => {
 		setAISuggestion(null);
 		setAIStatus("idle");
@@ -501,12 +479,6 @@ export default function VideoEditor() {
 			console.warn("Failed to load transcription state:", error);
 		});
 	}, [loadTranscriptionState]);
-
-	useEffect(() => {
-		loadNativeClickCaptureStatus().catch((error) => {
-			console.warn("Failed to load native click capture status:", error);
-		});
-	}, [loadNativeClickCaptureStatus]);
 
 	const saveProject = useCallback(
 		async (forceSaveAs: boolean) => {
@@ -1229,7 +1201,12 @@ export default function VideoEditor() {
 			setTranscriptSourceLabel(`${labelFromPath(sourcePath)} (${providerLabel} transcription)`);
 			setTranscriptStatus("ready");
 			resetAIInsightState();
-			toast.success(`Transcribed ${segments.length} transcript segments`);
+			if (segments.length > 0 && segments[0]) {
+				handleSeek(segments[0].startMs / 1000);
+			}
+			toast.success(
+				`Captions ready — ${segments.length} segment${segments.length === 1 ? "" : "s"} transcribed`,
+			);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			setTranscriptStatus("error");
@@ -1237,6 +1214,7 @@ export default function VideoEditor() {
 			toast.error(message);
 		}
 	}, [
+		handleSeek,
 		labelFromPath,
 		resetAIInsightState,
 		selectedTranscriptionOption,
@@ -1244,6 +1222,19 @@ export default function VideoEditor() {
 		videoPath,
 		videoSourcePath,
 	]);
+
+	// Auto-transcribe when a fresh recording with a mic sidecar is loaded
+	useEffect(() => {
+		if (
+			shouldAutoTranscribeRef.current &&
+			videoSourcePath &&
+			transcriptionOptions.some((o) => o.available) &&
+			transcriptStatus === "idle"
+		) {
+			shouldAutoTranscribeRef.current = false;
+			void handleTranscribeAudio();
+		}
+	}, [videoSourcePath, transcriptionOptions, transcriptStatus, handleTranscribeAudio]);
 
 	const handleClearTranscript = useCallback(() => {
 		setTranscriptSegments([]);
@@ -1253,39 +1244,6 @@ export default function VideoEditor() {
 		resetAIInsightState();
 		toast.success("Transcript cleared");
 	}, [resetAIInsightState]);
-
-	const handleExportTranscript = useCallback(
-		async (format: SubtitleFormat) => {
-			if (transcriptSegments.length === 0) {
-				toast.error("No transcript segments available to export.");
-				return;
-			}
-
-			const sourcePath = videoSourcePath ?? (videoPath ? fromFileUrl(videoPath) : null);
-			const fileStem =
-				sourcePath
-					?.split(/[\\/]/)
-					.pop()
-					?.replace(/\.[^.]+$/, "") ?? `transcript-${Date.now()}`;
-			const fileName = `${fileStem}.${format}`;
-			const contents =
-				format === "srt"
-					? serializeTranscriptAsSrt(transcriptSegments)
-					: serializeTranscriptAsVtt(transcriptSegments);
-
-			const result = await window.electronAPI.saveExportedText(contents, fileName);
-			if (result.canceled) {
-				return;
-			}
-			if (!result.success) {
-				toast.error(result.message || `Failed to save ${format.toUpperCase()} export`);
-				return;
-			}
-
-			toast.success(`${format.toUpperCase()} exported${result.path ? ` to ${result.path}` : ""}`);
-		},
-		[transcriptSegments, videoPath, videoSourcePath],
-	);
 
 	const handleCaptionSettingsChange = useCallback((partial: Partial<CaptionSettings>) => {
 		setCaptionSettings((current) => ({ ...current, ...partial }));
@@ -1311,7 +1269,9 @@ export default function VideoEditor() {
 		}
 
 		const previousSnapshot = undoStack[undoStack.length - 1]!;
-		const previousState = normalizeProjectEditor(JSON.parse(previousSnapshot) as ProjectEditorState);
+		const previousState = normalizeProjectEditor(
+			JSON.parse(previousSnapshot) as ProjectEditorState,
+		);
 		isRestoringHistoryRef.current = true;
 		setUndoStack((prev) => prev.slice(0, -1));
 		setRedoStack((prev) => [...prev, currentEditorSnapshot]);
@@ -1399,29 +1359,6 @@ export default function VideoEditor() {
 		[loadTranscriptionState],
 	);
 
-	const handleRequestNativeClickCaptureAccess = useCallback(async () => {
-		const status = await window.electronAPI.requestNativeClickCaptureAccess();
-		setNativeClickCaptureStatus(status);
-		if (status.permissionGranted) {
-			toast.success("Native click capture is ready.");
-			return;
-		}
-
-		toast.info(
-			status.reason ?? "Grant Accessibility access to enable precise native click capture.",
-		);
-	}, []);
-
-	const handleOpenNativeClickCaptureSettings = useCallback(async () => {
-		const result = await window.electronAPI.openNativeClickCaptureSettings();
-		if (!result.success) {
-			toast.error(result.error ?? "Unable to open Accessibility settings.");
-			return;
-		}
-
-		toast.info("OpenScreen needs Accessibility access for precise native click capture.");
-	}, []);
-
 	const handleSaveTranscriptEdits = useCallback(
 		(segments: TranscriptSegment[]) => {
 			setTranscriptSegments(segments);
@@ -1506,112 +1443,6 @@ export default function VideoEditor() {
 			setIsTestingAIConnection(false);
 		}
 	}, []);
-
-	const handleRunAIAnalysis = useCallback(async () => {
-		if (!isAIConfigReady(aiConfig)) {
-			const message = "Configure AI settings before running AI analysis.";
-			setAIStatus("error");
-			setAIError(message);
-			toast.error(message);
-			return;
-		}
-
-		const videoElement = videoPlaybackRef.current?.video;
-		if (!videoElement) {
-			const message = "Video is not ready for AI analysis.";
-			setAIStatus("error");
-			setAIError(message);
-			toast.error(message);
-			return;
-		}
-
-		try {
-			setAIStatus("analyzing");
-			setAIError(null);
-
-			const currentAIConfig = aiConfig;
-			if (!currentAIConfig) {
-				throw new Error("AI configuration is missing.");
-			}
-
-			const durationMs = Math.round((duration || videoElement.duration || 0) * 1000);
-			const request = await buildSmartDemoAIRequest({
-				config: currentAIConfig,
-				cursorTelemetry,
-				durationMs,
-				userPrompt: aiPrompt,
-				transcriptSegments,
-				videoElement,
-			});
-
-			const result = await window.electronAPI.runSmartDemoAIAnalysis(request);
-			if (!result.success || !result.data) {
-				throw new Error(result.error ?? "AI analysis failed.");
-			}
-
-			setAISuggestion(result.data);
-			setAIStatus("idle");
-			toast.success("AI Smart Demo suggestions generated");
-		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			setAIStatus("error");
-			setAIError(message);
-			toast.error(message);
-		}
-	}, [aiConfig, aiPrompt, cursorTelemetry, duration, transcriptSegments]);
-
-	const handleApplyAISuggestion = useCallback(() => {
-		if (!aiSuggestion) {
-			return;
-		}
-
-		const mapped = applySmartDemoAISuggestion(aiSuggestion);
-		setZoomRegions((prev) => [
-			...prev.filter((region) => !isAIManagedRegionId(region.id)),
-			...mapped.zoomRegions,
-		]);
-		setTrimRegions((prev) => [
-			...prev.filter((region) => !isAIManagedRegionId(region.id)),
-			...mapped.trimRegions,
-		]);
-		previewAppliedZoomRegions(mapped.zoomRegions);
-		toast.success("Applied AI Smart Demo suggestions");
-	}, [aiSuggestion, previewAppliedZoomRegions]);
-
-	const handleApplyAIZooms = useCallback(() => {
-		if (!aiSuggestion) {
-			return;
-		}
-
-		const zoomRegions = mapAISuggestionZoomRegions(aiSuggestion);
-		setZoomRegions((prev) => [
-			...prev.filter((region) => !isAIManagedRegionId(region.id)),
-			...zoomRegions,
-		]);
-		previewAppliedZoomRegions(zoomRegions);
-		toast.success(
-			zoomRegions.length > 0
-				? `Applied ${zoomRegions.length} AI zoom suggestion${zoomRegions.length === 1 ? "" : "s"}`
-				: "Removed AI zoom suggestions",
-		);
-	}, [aiSuggestion, previewAppliedZoomRegions]);
-
-	const handleApplyAITrims = useCallback(() => {
-		if (!aiSuggestion) {
-			return;
-		}
-
-		const trimRegions = mapAISuggestionTrimRegions(aiSuggestion);
-		setTrimRegions((prev) => [
-			...prev.filter((region) => !isAIManagedRegionId(region.id)),
-			...trimRegions,
-		]);
-		toast.success(
-			trimRegions.length > 0
-				? `Applied ${trimRegions.length} AI trim suggestion${trimRegions.length === 1 ? "" : "s"}`
-				: "Removed AI trim suggestions",
-		);
-	}, [aiSuggestion]);
 
 	// Global Tab prevention
 	useEffect(() => {
@@ -2154,7 +1985,9 @@ export default function VideoEditor() {
 						onClick={() => setShowAISettings(true)}
 						className="inline-flex h-8 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-[11px] font-medium text-slate-200 transition-colors hover:bg-white/10"
 					>
-						<Sparkles className={`h-3.5 w-3.5 ${aiReady ? "text-emerald-300" : "text-purple-300"}`} />
+						<Sparkles
+							className={`h-3.5 w-3.5 ${aiReady ? "text-emerald-300" : "text-purple-300"}`}
+						/>
 						AI Assist
 					</button>
 				</div>
@@ -2381,47 +2214,27 @@ export default function VideoEditor() {
 						onSpeedDelete={handleSpeedDelete}
 						smartDemoSlot={
 							<SmartDemoPanel
-							cursorTelemetry={cursorTelemetry}
-							duration={duration}
-							isAutoMode={smartDemoAutoMode}
-							videoPath={videoPath}
-							aiConfig={aiConfig}
-							aiPrompt={aiPrompt}
-							aiSuggestion={aiSuggestion}
-							aiStatus={aiStatus}
-							aiError={aiError}
-							transcriptSegments={transcriptSegments}
-							transcriptSourceLabel={transcriptSourceLabel}
-							transcriptStatus={transcriptStatus}
-							transcriptError={transcriptError}
-							captionSettings={captionSettings}
-							transcriptionConfig={transcriptionConfig}
-							transcriptionOptions={transcriptionOptions}
-							nativeClickCaptureStatus={nativeClickCaptureStatus}
-							usesNativeClickTelemetry={usesNativeClickTelemetry}
-							nativeClickTelemetryCount={nativeClickTelemetryCount}
-							transcriptWarnings={transcriptAnalysis.warnings}
-							localSpeechAnchorCount={transcriptAnalysis.speechAnchors.length}
-							localFocusMomentCount={transcriptAnalysis.focusMoments.length}
-							onAIPromptChange={setAIPrompt}
-							onImportTranscript={handleImportTranscript}
-							onTranscribeAudio={handleTranscribeAudio}
-							onSaveTranscriptionConfig={handleSaveTranscriptionConfig}
-							onCaptionSettingsChange={handleCaptionSettingsChange}
-							onRequestNativeClickCaptureAccess={handleRequestNativeClickCaptureAccess}
-							onOpenNativeClickCaptureSettings={handleOpenNativeClickCaptureSettings}
-							onClearTranscript={handleClearTranscript}
-							onReviewTranscript={() => setShowTranscriptReview(true)}
-							onExportTranscript={handleExportTranscript}
-							onRunAIAnalysis={handleRunAIAnalysis}
-							onApplyAISuggestion={handleApplyAISuggestion}
-							onApplyAIZooms={handleApplyAIZooms}
-							onApplyAITrims={handleApplyAITrims}
-							onApplyZoomRegions={handleSmartDemoApplyZoom}
-							onApplyAnnotations={handleSmartDemoApplyAnnotations}
-							onApplyTrimRegions={handleSmartDemoApplyTrim}
-							onApplyPolishDemo={handlePolishDemo}
-							onSeekToTime={handleSeek}
+								cursorTelemetry={cursorTelemetry}
+								duration={duration}
+								isAutoMode={smartDemoAutoMode}
+								videoPath={videoPath}
+								transcriptSegments={transcriptSegments}
+								transcriptStatus={transcriptStatus}
+								transcriptError={transcriptError}
+								captionSettings={captionSettings}
+								transcriptionConfig={transcriptionConfig}
+								transcriptionOptions={transcriptionOptions}
+								onImportTranscript={handleImportTranscript}
+								onTranscribeAudio={handleTranscribeAudio}
+								onSaveTranscriptionConfig={handleSaveTranscriptionConfig}
+								onCaptionSettingsChange={handleCaptionSettingsChange}
+								onClearTranscript={handleClearTranscript}
+								onReviewTranscript={() => setShowTranscriptReview(true)}
+								onApplyZoomRegions={handleSmartDemoApplyZoom}
+								onApplyAnnotations={handleSmartDemoApplyAnnotations}
+								onApplyTrimRegions={handleSmartDemoApplyTrim}
+								onApplyPolishDemo={handlePolishDemo}
+								onSeekToTime={handleSeek}
 							/>
 						}
 					/>

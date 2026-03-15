@@ -127,7 +127,7 @@ export interface CursorClickPulseSettings {
 
 export const DEFAULT_ANNOTATION_POSITION: AnnotationPosition = {
 	x: 50,
-	y: 50,
+	y: 78,
 };
 
 export const DEFAULT_ANNOTATION_SIZE: AnnotationSize = {

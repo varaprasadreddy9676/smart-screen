@@ -77,8 +77,7 @@ function getConnectedTransition(pairs: ConnectedRegionPair[], timeMs: number) {
 		}
 
 		const progress = easeConnectedPan(
-			(timeMs - pair.transitionStart) /
-				Math.max(1, pair.transitionEnd - pair.transitionStart),
+			(timeMs - pair.transitionStart) / Math.max(1, pair.transitionEnd - pair.transitionStart),
 		);
 
 		return {
@@ -122,8 +121,9 @@ export function findDominantRegion(
 	timeMs: number,
 	options: DominantRegionOptions = {},
 ) {
-	const connectedPairs = options.connectZooms ?? true ? getConnectedRegionPairs(regions) : [];
-	const connectedTransition = connectedPairs.length > 0 ? getConnectedTransition(connectedPairs, timeMs) : null;
+	const connectedPairs = (options.connectZooms ?? true) ? getConnectedRegionPairs(regions) : [];
+	const connectedTransition =
+		connectedPairs.length > 0 ? getConnectedTransition(connectedPairs, timeMs) : null;
 	if (connectedTransition) {
 		return connectedTransition;
 	}

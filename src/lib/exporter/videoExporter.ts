@@ -2,9 +2,9 @@ import type { TranscriptSegment } from "@shared/ai";
 import type {
 	AnnotationRegion,
 	CaptionSettings,
+	CropRegion,
 	CursorClickPulseSettings,
 	CursorTelemetryPoint,
-	CropRegion,
 	KeystrokeOverlaySettings,
 	KeystrokeTelemetryEvent,
 	SpeedRegion,

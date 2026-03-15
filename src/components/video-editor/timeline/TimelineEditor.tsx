@@ -51,6 +51,7 @@ import {
 	ZOOM_ROW_ID,
 } from "./timelineModel";
 import { detectZoomDwellCandidates, normalizeCursorTelemetry } from "./zoomSuggestionUtils";
+
 const FALLBACK_RANGE_MS = 1000;
 const TARGET_MARKER_COUNT = 12;
 const SUGGESTION_SPACING_MS = 1800;
@@ -603,7 +604,11 @@ const TimelineRows = memo(function TimelineRows({
 				))}
 			</Row>
 
-			<Row id={ANNOTATION_ROW_ID} isEmpty={annotationItems.length === 0} hint="Press A to add annotation">
+			<Row
+				id={ANNOTATION_ROW_ID}
+				isEmpty={annotationItems.length === 0}
+				hint="Press A to add annotation"
+			>
 				{annotationItems.map((item) => (
 					<Item
 						id={item.id}

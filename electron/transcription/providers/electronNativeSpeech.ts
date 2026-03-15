@@ -1,21 +1,32 @@
+import { createRequire } from "module";
 import type { TranscriptSegment } from "../../../shared/ai";
 import { resolvePreparedTranscriptionInput } from "../preparedInput";
 import type { TranscriptionContext, TranscriptionProvider } from "./base";
 
-interface NativeSpeechModule {
-	getSpeechAvailability: () => Promise<{ available: boolean; reason?: string }>;
-	transcribeFile: (input: { filePath: string }) => Promise<{ segments?: TranscriptSegment[] }>;
+const _require = createRequire(import.meta.url);
+
+interface SpeechBackend {
+	checkAvailability: () => Promise<{ available: boolean; reason?: string }>;
+	transcribeFile: (options: { filePath: string }) => Promise<{ segments?: TranscriptSegment[] }>;
 }
 
-async function loadNativeSpeechModule(): Promise<NativeSpeechModule> {
+let cachedBackend: SpeechBackend | null = null;
+
+function loadSpeechBackend(): SpeechBackend {
+	if (cachedBackend) return cachedBackend;
+
+	// Prefer the unscoped backend that this project ships.
+	// electron-native-speech's auto-discovery looks for the scoped package
+	// (@electron-native-speech/backend-macos) which is NOT installed here.
 	try {
-		const dynamicImport = new Function("specifier", "return import(specifier)") as (
-			specifier: string,
-		) => Promise<unknown>;
-		return (await dynamicImport("electron-native-speech")) as NativeSpeechModule;
+		const mod = _require("electron-native-speech-backend-macos") as {
+			MacOSSpeechBackend: new () => SpeechBackend;
+		};
+		cachedBackend = new mod.MacOSSpeechBackend();
+		return cachedBackend;
 	} catch (error) {
 		throw new Error(
-			`electron-native-speech is not available in this build: ${
+			`electron-native-speech-backend-macos is not available: ${
 				error instanceof Error ? error.message : String(error)
 			}`,
 		);
@@ -23,10 +34,11 @@ async function loadNativeSpeechModule(): Promise<NativeSpeechModule> {
 }
 
 /**
- * macOS transcription provider backed by electron-native-speech.
+ * macOS transcription provider backed by electron-native-speech-backend-macos.
  *
- * Uses Apple's SFSpeechRecognizer via a persistent helper process —
- * no separate app bundle needed, no per-call spawn overhead, no temp JSON files.
+ * Uses Apple's SFSpeechRecognizer via a persistent SpeechHelper process.
+ * Bypasses the electron-native-speech wrapper to avoid the scoped-package
+ * auto-discovery that fails in this project (we ship the unscoped variant).
  *
  * Audio source priority:
  *   1. .transcription.wav sidecar (microphone audio captured during recording)
@@ -45,17 +57,18 @@ export class ElectronNativeSpeechProvider implements TranscriptionProvider {
 		}
 
 		try {
-			const { getSpeechAvailability } = await loadNativeSpeechModule();
-			const av = await getSpeechAvailability();
+			const backend = loadSpeechBackend();
+			console.log("[transcription] MacOSSpeechBackend loaded, checking availability…");
+			const av = await backend.checkAvailability();
+			console.log("[transcription] checkAvailability result:", JSON.stringify(av));
 			if (!av.available) {
 				return { available: false, reason: av.reason ?? "Speech recognition is unavailable." };
 			}
 			return { available: true };
 		} catch (error) {
-			return {
-				available: false,
-				reason: error instanceof Error ? error.message : String(error),
-			};
+			const reason = error instanceof Error ? error.message : String(error);
+			console.error("[transcription] isAvailable error:", reason);
+			return { available: false, reason };
 		}
 	}
 
@@ -71,14 +84,13 @@ export class ElectronNativeSpeechProvider implements TranscriptionProvider {
 		const preparedInput = await resolvePreparedTranscriptionInput(videoPath);
 
 		try {
-			const { transcribeFile } = await loadNativeSpeechModule();
-			const result = await transcribeFile({ filePath: preparedInput.inputPath });
+			const backend = loadSpeechBackend();
+			const result = await backend.transcribeFile({ filePath: preparedInput.inputPath });
 
 			if (!result.segments || result.segments.length === 0) {
 				throw new Error("No speech detected in the recording.");
 			}
 
-			// Our TranscriptSegment shape matches theirs exactly
 			return result.segments.map((seg) => ({
 				id: seg.id,
 				startMs: seg.startMs,

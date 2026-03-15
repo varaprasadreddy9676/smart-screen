@@ -12,7 +12,9 @@ const LEGACY_CLICK_RATIO_MAX = 2.25;
 const MIN_LEGACY_CLICK_SAMPLES = 4;
 const MAX_MOVE_MATCH_WINDOW_MS = 120;
 
-export function repairLegacyNativeClickScale<T extends CursorTelemetryPointLike>(samples: T[]): T[] {
+export function repairLegacyNativeClickScale<T extends CursorTelemetryPointLike>(
+	samples: T[],
+): T[] {
 	const movementSamples = samples.filter((sample) => sample.kind !== "click");
 	const nativeClickDowns = samples.filter(
 		(sample) => sample.kind === "click" && sample.phase === "down" && sample.source === "native",

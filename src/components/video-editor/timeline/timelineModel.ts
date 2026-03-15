@@ -1,10 +1,5 @@
 import type { Range, Span } from "dnd-timeline";
-import type {
-	AnnotationRegion,
-	SpeedRegion,
-	TrimRegion,
-	ZoomRegion,
-} from "../types";
+import type { AnnotationRegion, SpeedRegion, TrimRegion, ZoomRegion } from "../types";
 
 export const ZOOM_ROW_ID = "row-zoom";
 export const TRIM_ROW_ID = "row-trim";

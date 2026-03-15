@@ -472,7 +472,33 @@ export function SettingsPanel({
 					)}
 				</div>
 
-				<Accordion type="multiple" defaultValue={["effects", "background"]} className="space-y-1">
+				<Accordion
+					type="multiple"
+					defaultValue={["smart-demo", "effects", "background"]}
+					className="space-y-1"
+				>
+					{smartDemoSlot && (
+						<AccordionItem
+							value="smart-demo"
+							className="border-purple-800/30 rounded-xl bg-purple-950/10 px-3"
+						>
+							<AccordionTrigger className="py-2.5 hover:no-underline">
+								<div className="flex items-center gap-2">
+									<svg
+										width="13"
+										height="13"
+										viewBox="0 0 24 24"
+										fill="currentColor"
+										className="text-purple-400"
+									>
+										<path d="M9.663 17h4.673M12 3v1m6.364 1.636-.707.707M21 12h-1M4 12H3m3.343-5.657-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+									</svg>
+									<span className="text-xs font-medium text-purple-300">Smart Demo</span>
+								</div>
+							</AccordionTrigger>
+							<AccordionContent className="pb-3 pt-1 px-0">{smartDemoSlot}</AccordionContent>
+						</AccordionItem>
+					)}
 					<AccordionItem value="effects" className="border-white/5 rounded-xl bg-white/[0.02] px-3">
 						<AccordionTrigger className="py-2.5 hover:no-underline">
 							<div className="flex items-center gap-2">
@@ -746,29 +772,6 @@ export function SettingsPanel({
 							</Tabs>
 						</AccordionContent>
 					</AccordionItem>
-
-					{smartDemoSlot && (
-						<AccordionItem
-							value="smart-demo"
-							className="border-purple-800/30 rounded-xl bg-purple-950/10 px-3"
-						>
-							<AccordionTrigger className="py-2.5 hover:no-underline">
-								<div className="flex items-center gap-2">
-									<svg
-										width="13"
-										height="13"
-										viewBox="0 0 24 24"
-										fill="currentColor"
-										className="text-purple-400"
-									>
-										<path d="M9.663 17h4.673M12 3v1m6.364 1.636-.707.707M21 12h-1M4 12H3m3.343-5.657-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-									</svg>
-									<span className="text-xs font-medium text-purple-300">Smart Demo</span>
-								</div>
-							</AccordionTrigger>
-							<AccordionContent className="pb-3 pt-1 px-0">{smartDemoSlot}</AccordionContent>
-						</AccordionItem>
-					)}
 				</Accordion>
 			</div>
 
@@ -932,68 +935,39 @@ export function SettingsPanel({
 					</div>
 				)}
 
-				<div className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3">
-					<div className="flex items-center justify-between gap-2">
-						<div>
-							<div className="text-[11px] font-medium text-slate-200">Captions</div>
-							<div className="text-[10px] text-slate-500">
-								{hasTranscript
-									? "Preview transcript captions and optionally burn them into exports."
-									: "Import or transcribe a transcript to enable captions."}
+				{hasTranscript && (
+					<div className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3">
+						<div className="text-[11px] font-medium text-slate-200 mb-3">Caption Style</div>
+						<div className="space-y-3">
+							<div className="space-y-1.5">
+								<div className="flex items-center justify-between text-[10px] text-slate-400">
+									<span>Caption size</span>
+									<span>{captionSettings?.fontSize ?? 30}px</span>
+								</div>
+								<Slider
+									value={[captionSettings?.fontSize ?? 30]}
+									min={16}
+									max={48}
+									step={1}
+									onValueChange={([value]) => onCaptionSettingsChange?.({ fontSize: value })}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<div className="flex items-center justify-between text-[10px] text-slate-400">
+									<span>Bottom offset</span>
+									<span>{captionSettings?.bottomOffset ?? 8}%</span>
+								</div>
+								<Slider
+									value={[captionSettings?.bottomOffset ?? 8]}
+									min={4}
+									max={18}
+									step={1}
+									onValueChange={([value]) => onCaptionSettingsChange?.({ bottomOffset: value })}
+								/>
 							</div>
 						</div>
 					</div>
-					<div className="mt-3 space-y-3">
-						<div className="flex items-center justify-between">
-							<span className="text-[10px] text-slate-300">Show in preview</span>
-							<Switch
-								checked={captionSettings?.showInPreview ?? false}
-								onCheckedChange={(checked) => onCaptionSettingsChange?.({ showInPreview: checked })}
-								disabled={!hasTranscript}
-								className="data-[state=checked]:bg-[#34B27B] scale-75"
-							/>
-						</div>
-						<div className="flex items-center justify-between">
-							<span className="text-[10px] text-slate-300">Burn into export</span>
-							<Switch
-								checked={captionSettings?.burnInDuringExport ?? false}
-								onCheckedChange={(checked) =>
-									onCaptionSettingsChange?.({ burnInDuringExport: checked })
-								}
-								disabled={!hasTranscript}
-								className="data-[state=checked]:bg-[#34B27B] scale-75"
-							/>
-						</div>
-						<div className="space-y-1.5">
-							<div className="flex items-center justify-between text-[10px] text-slate-400">
-								<span>Caption size</span>
-								<span>{captionSettings?.fontSize ?? 30}px</span>
-							</div>
-							<Slider
-								value={[captionSettings?.fontSize ?? 30]}
-								min={16}
-								max={48}
-								step={1}
-								onValueChange={([value]) => onCaptionSettingsChange?.({ fontSize: value })}
-								disabled={!hasTranscript}
-							/>
-						</div>
-						<div className="space-y-1.5">
-							<div className="flex items-center justify-between text-[10px] text-slate-400">
-								<span>Bottom offset</span>
-								<span>{captionSettings?.bottomOffset ?? 8}%</span>
-							</div>
-							<Slider
-								value={[captionSettings?.bottomOffset ?? 8]}
-								min={4}
-								max={18}
-								step={1}
-								onValueChange={([value]) => onCaptionSettingsChange?.({ bottomOffset: value })}
-								disabled={!hasTranscript}
-							/>
-						</div>
-					</div>
-				</div>
+				)}
 
 				{hasClickTelemetry && (
 					<div className="mb-3 rounded-xl border border-white/10 bg-white/5 p-3">
@@ -1053,9 +1027,7 @@ export function SettingsPanel({
 									min={0.8}
 									max={1.5}
 									step={0.05}
-									onValueChange={([value]) =>
-										onCursorClickPulseSettingsChange?.({ size: value })
-									}
+									onValueChange={([value]) => onCursorClickPulseSettingsChange?.({ size: value })}
 								/>
 							</div>
 						</div>
@@ -1096,7 +1068,9 @@ export function SettingsPanel({
 							<div className="space-y-1.5">
 								<div className="flex items-center justify-between text-[10px] text-slate-400">
 									<span>Visible duration</span>
-									<span>{Math.round((keystrokeOverlaySettings?.durationMs ?? 1400) / 100) / 10}s</span>
+									<span>
+										{Math.round((keystrokeOverlaySettings?.durationMs ?? 1400) / 100) / 10}s
+									</span>
 								</div>
 								<Slider
 									value={[keystrokeOverlaySettings?.durationMs ?? 1400]}

@@ -1,5 +1,5 @@
-import type { CursorClickPulseSettings } from "./types";
 import { getCursorClickPulseVisual } from "@/lib/cursorEnhancements";
+import type { CursorClickPulseSettings } from "./types";
 
 interface CursorClickPulseOverlayProps {
 	point: { x: number; y: number };

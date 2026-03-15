@@ -66,7 +66,12 @@ function isNearEdge(focus: { cx: number; cy: number }) {
 	);
 }
 
-function clampDuration(startMs: number, endMs: number, minDurationMs: number, maxDurationMs: number) {
+function clampDuration(
+	startMs: number,
+	endMs: number,
+	minDurationMs: number,
+	maxDurationMs: number,
+) {
 	return Math.min(startMs + maxDurationMs, Math.max(startMs + minDurationMs, endMs));
 }
 
@@ -144,11 +149,7 @@ function buildCandidate(cluster: DemoSegment[]): ZoomCandidate | null {
 		startMs,
 		endMs,
 		depth:
-			action === "typing"
-				? TYPING_ZOOM_DEPTH
-				: zoomableSegments.length > 1
-					? 2
-					: CLICK_ZOOM_DEPTH,
+			action === "typing" ? TYPING_ZOOM_DEPTH : zoomableSegments.length > 1 ? 2 : CLICK_ZOOM_DEPTH,
 		focus,
 		confidence: Math.max(0, Math.min(1, confidence)),
 		segmentCount: zoomableSegments.length,
@@ -222,9 +223,7 @@ export function buildAutoZoomRegions(segments: DemoSegment[]): ZoomRegion[] {
 				last.startMs,
 				Math.max(last.endMs, candidate.endMs),
 				last.action === "typing" ? TYPING_ZOOM_MIN_DURATION_MS : CLICK_ZOOM_MIN_DURATION_MS,
-				last.action === "typing"
-					? TYPING_ZOOM_MAX_DURATION_MS
-					: CLICK_CLUSTER_ZOOM_MAX_DURATION_MS,
+				last.action === "typing" ? TYPING_ZOOM_MAX_DURATION_MS : CLICK_CLUSTER_ZOOM_MAX_DURATION_MS,
 			);
 			last.depth = Math.max(last.depth, candidate.depth) as ZoomDepth;
 			last.confidence = Math.max(last.confidence, candidate.confidence);
@@ -243,7 +242,10 @@ export function buildAutoZoomRegions(segments: DemoSegment[]): ZoomRegion[] {
 			continue;
 		}
 
-		if (focusDistance < REFRAME_DISTANCE_THRESHOLD && candidate.confidence < OVERRIDE_REFRAME_CONFIDENCE) {
+		if (
+			focusDistance < REFRAME_DISTANCE_THRESHOLD &&
+			candidate.confidence < OVERRIDE_REFRAME_CONFIDENCE
+		) {
 			continue;
 		}
 

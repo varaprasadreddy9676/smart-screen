@@ -12,7 +12,10 @@ export function startRecordingClock(nowMs: number): RecordingClockState {
 	};
 }
 
-export function pauseRecordingClock(state: RecordingClockState, nowMs: number): RecordingClockState {
+export function pauseRecordingClock(
+	state: RecordingClockState,
+	nowMs: number,
+): RecordingClockState {
 	if (state.pausedAtMs !== null) {
 		return state;
 	}

@@ -3,9 +3,9 @@ import { Application, BlurFilter, Container, Graphics, Sprite, Texture } from "p
 import type {
 	AnnotationRegion,
 	CaptionSettings,
+	CropRegion,
 	CursorClickPulseSettings,
 	CursorTelemetryPoint,
-	CropRegion,
 	KeystrokeOverlaySettings,
 	KeystrokeTelemetryEvent,
 	SpeedRegion,
@@ -17,9 +17,7 @@ import {
 	MIN_DELTA,
 	SMOOTHING_FACTOR,
 } from "@/components/video-editor/videoPlayback/constants";
-import {
-	clampFocusToScale as clampFocusToScaleUtil,
-} from "@/components/video-editor/videoPlayback/focusUtils";
+import { clampFocusToScale as clampFocusToScaleUtil } from "@/components/video-editor/videoPlayback/focusUtils";
 import { findDominantRegion } from "@/components/video-editor/videoPlayback/zoomRegionUtils";
 import { applyZoomTransform } from "@/components/video-editor/videoPlayback/zoomTransform";
 import { renderAnnotations } from "./annotationRenderer";

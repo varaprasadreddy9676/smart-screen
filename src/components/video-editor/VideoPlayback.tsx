@@ -19,10 +19,7 @@ import {
 	useState,
 } from "react";
 import { getAssetPath } from "@/lib/assetPath";
-import {
-	getActiveCursorClickPulse,
-	projectCursorPointToStage,
-} from "@/lib/cursorEnhancements";
+import { getActiveCursorClickPulse, projectCursorPointToStage } from "@/lib/cursorEnhancements";
 import { getActiveKeystrokeCue } from "@/lib/keystrokes";
 import { getActiveSubtitleCue } from "@/lib/subtitles";
 import { type AspectRatio, formatAspectRatioForCSS } from "@/utils/aspectRatioUtils";

@@ -160,7 +160,9 @@ export function buildClickHighlights(
 		return [];
 	}
 
-	const clickSegments = segments.filter((segment) => segment.action === "click" && segment.zoomTarget);
+	const clickSegments = segments.filter(
+		(segment) => segment.action === "click" && segment.zoomTarget,
+	);
 	if (clickSegments.length === 0) {
 		return [];
 	}

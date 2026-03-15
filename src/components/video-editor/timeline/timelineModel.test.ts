@@ -88,10 +88,9 @@ describe("timelineModel", () => {
 			},
 		];
 
-		expect(filterTimelineItemsByRange(items, { start: 2000, end: 4000 }).map((item) => item.id)).toEqual([
-			"near-left",
-			"visible",
-		]);
+		expect(
+			filterTimelineItemsByRange(items, { start: 2000, end: 4000 }).map((item) => item.id),
+		).toEqual(["near-left", "visible"]);
 	});
 
 	it("partitions items by row for rendering", () => {

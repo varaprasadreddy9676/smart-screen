@@ -1,6 +1,6 @@
-import { memo } from "react";
 import type { RowDefinition } from "dnd-timeline";
 import { useRow } from "dnd-timeline";
+import { memo } from "react";
 
 interface RowProps extends RowDefinition {
 	children: React.ReactNode;

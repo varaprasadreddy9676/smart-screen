@@ -132,8 +132,10 @@ export function AnnotationOverlay({
 				isDraggingRef.current = true;
 			}}
 			onDragStop={(_e, d) => {
-				const xPercent = (Math.max(0, Math.min(d.x, containerWidth - width)) / containerWidth) * 100;
-				const yPercent = (Math.max(0, Math.min(d.y, containerHeight - height)) / containerHeight) * 100;
+				const xPercent =
+					(Math.max(0, Math.min(d.x, containerWidth - width)) / containerWidth) * 100;
+				const yPercent =
+					(Math.max(0, Math.min(d.y, containerHeight - height)) / containerHeight) * 100;
 				onPositionChange(annotation.id, { x: xPercent, y: yPercent });
 
 				// Reset dragging flag after a short delay to prevent click event

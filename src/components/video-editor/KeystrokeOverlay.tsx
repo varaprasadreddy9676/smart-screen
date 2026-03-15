@@ -6,11 +6,7 @@ interface KeystrokeOverlayProps {
 	containerHeight: number;
 }
 
-export function KeystrokeOverlay({
-	text,
-	settings,
-	containerHeight,
-}: KeystrokeOverlayProps) {
+export function KeystrokeOverlay({ text, settings, containerHeight }: KeystrokeOverlayProps) {
 	const scaleFactor = Math.max(0.65, containerHeight / 1080);
 	const fontSize = Math.round(settings.fontSize * scaleFactor);
 

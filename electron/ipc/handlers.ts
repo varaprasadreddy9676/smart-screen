@@ -12,13 +12,6 @@ import {
 } from "../recording/cursorTelemetryMapping";
 import { repairLegacyNativeClickScale } from "../recording/cursorTelemetryRepair";
 import {
-	getElapsedRecordingTimeMs,
-	pauseRecordingClock,
-	resumeRecordingClock,
-	startRecordingClock,
-	type RecordingClockState,
-} from "../recording/recordingClock";
-import {
 	getNativeClickCaptureStatus,
 	type MouseClickMonitorSession,
 	requestNativeClickCaptureAccess,
@@ -28,6 +21,13 @@ import {
 	type KeyboardShortcutMonitorSession,
 	startMacOSKeyboardShortcutMonitor,
 } from "../recording/macosKeyboardMonitor";
+import {
+	getElapsedRecordingTimeMs,
+	pauseRecordingClock,
+	type RecordingClockState,
+	resumeRecordingClock,
+	startRecordingClock,
+} from "../recording/recordingClock";
 import {
 	getTranscriptionConfigResult,
 	getTranscriptionProviderOptionsResult,
@@ -487,35 +487,35 @@ export function registerIpcHandlers(
 
 			const samples: CursorTelemetryPoint[] = repairLegacyNativeClickScale(
 				rawSamples
-				.filter((sample: unknown) => Boolean(sample && typeof sample === "object"))
-				.map((sample: unknown) => {
-					const point = sample as Partial<CursorTelemetryPoint>;
-					return {
-						timeMs:
-							typeof point.timeMs === "number" && Number.isFinite(point.timeMs)
-								? Math.max(0, point.timeMs)
-								: 0,
-						cx:
-							typeof point.cx === "number" && Number.isFinite(point.cx)
-								? clamp(point.cx, 0, 1)
-								: 0.5,
-						cy:
-							typeof point.cy === "number" && Number.isFinite(point.cy)
-								? clamp(point.cy, 0, 1)
-								: 0.5,
-						kind: point.kind === "click" ? "click" : "move",
-						button:
-							point.button === "left" ||
-							point.button === "right" ||
-							point.button === "middle" ||
-							point.button === "other"
-								? point.button
-								: undefined,
-						phase: point.phase === "down" || point.phase === "up" ? point.phase : undefined,
-						source: point.source === "native" ? "native" : "sampled",
-					};
-				})
-				.sort((a: CursorTelemetryPoint, b: CursorTelemetryPoint) => a.timeMs - b.timeMs),
+					.filter((sample: unknown) => Boolean(sample && typeof sample === "object"))
+					.map((sample: unknown) => {
+						const point = sample as Partial<CursorTelemetryPoint>;
+						return {
+							timeMs:
+								typeof point.timeMs === "number" && Number.isFinite(point.timeMs)
+									? Math.max(0, point.timeMs)
+									: 0,
+							cx:
+								typeof point.cx === "number" && Number.isFinite(point.cx)
+									? clamp(point.cx, 0, 1)
+									: 0.5,
+							cy:
+								typeof point.cy === "number" && Number.isFinite(point.cy)
+									? clamp(point.cy, 0, 1)
+									: 0.5,
+							kind: point.kind === "click" ? "click" : "move",
+							button:
+								point.button === "left" ||
+								point.button === "right" ||
+								point.button === "middle" ||
+								point.button === "other"
+									? point.button
+									: undefined,
+							phase: point.phase === "down" || point.phase === "up" ? point.phase : undefined,
+							source: point.source === "native" ? "native" : "sampled",
+						};
+					})
+					.sort((a: CursorTelemetryPoint, b: CursorTelemetryPoint) => a.timeMs - b.timeMs),
 			);
 
 			return { success: true, samples };
@@ -658,7 +658,9 @@ export function registerIpcHandlers(
 	});
 
 	ipcMain.handle("list-transcription-providers", async () => {
-		return await getTranscriptionProviderOptionsResult();
+		const result = await getTranscriptionProviderOptionsResult();
+		console.log("[ipc] list-transcription-providers result:", JSON.stringify(result));
+		return result;
 	});
 
 	ipcMain.handle("open-transcript-file-picker", async () => {
@@ -992,8 +994,17 @@ export function registerIpcHandlers(
 		return { success: true };
 	});
 
-	ipcMain.handle("get-current-video-path", () => {
-		return currentVideoPath ? { success: true, path: currentVideoPath } : { success: false };
+	ipcMain.handle("get-current-video-path", async () => {
+		if (!currentVideoPath) return { success: false };
+		const sidecarPath = getTranscriptionAudioSidecarPath(currentVideoPath);
+		let hasSidecar = false;
+		try {
+			await fs.access(sidecarPath);
+			hasSidecar = true;
+		} catch {
+			hasSidecar = false;
+		}
+		return { success: true, path: currentVideoPath, hasSidecar };
 	});
 
 	ipcMain.handle("clear-current-video-path", () => {

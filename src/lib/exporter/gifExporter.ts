@@ -3,9 +3,9 @@ import GIF from "gif.js";
 import type {
 	AnnotationRegion,
 	CaptionSettings,
+	CropRegion,
 	CursorClickPulseSettings,
 	CursorTelemetryPoint,
-	CropRegion,
 	KeystrokeOverlaySettings,
 	KeystrokeTelemetryEvent,
 	SpeedRegion,

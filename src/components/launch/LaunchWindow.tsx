@@ -1,10 +1,9 @@
 import { Mic, MicOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { FiPause, FiPlay } from "react-icons/fi";
 import { BsRecordCircle } from "react-icons/bs";
 import { FaRegStopCircle } from "react-icons/fa";
 import { FaFolderMinus } from "react-icons/fa6";
-import { FiMinus, FiX } from "react-icons/fi";
+import { FiMinus, FiPause, FiPlay, FiX } from "react-icons/fi";
 import { MdMonitor } from "react-icons/md";
 import { RxDragHandleDots2 } from "react-icons/rx";
 import { useScreenRecorder } from "../../hooks/useScreenRecorder";
@@ -246,7 +245,9 @@ export function LaunchWindow() {
 					{recording ? (
 						<>
 							<FaRegStopCircle size={14} className="text-red-400" />
-							<span className="text-red-400">{paused ? `Paused ${formatTime(elapsed)}` : formatTime(elapsed)}</span>
+							<span className="text-red-400">
+								{paused ? `Paused ${formatTime(elapsed)}` : formatTime(elapsed)}
+							</span>
 						</>
 					) : (
 						<>
