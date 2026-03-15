@@ -128,7 +128,7 @@ export class StreamingVideoDecoder {
 					if (done || !chunk) break;
 
 					while (this.decoder!.decodeQueueSize > 10 && !this.cancelled) {
-						await new Promise((resolve) => setTimeout(resolve, 1));
+						await new Promise<void>((resolve) => setTimeout(resolve, 0));
 					}
 					if (this.cancelled) break;
 

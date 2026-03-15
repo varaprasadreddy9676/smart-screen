@@ -8,6 +8,19 @@ import {
 } from "mediabunny";
 import type { ExportConfig } from "./types";
 
+type MuxerCodec = "avc" | "hevc" | "vp9" | "vp8" | "av1";
+
+/** Map a WebCodecs codec string (e.g. "avc1.640033") to a mediabunny codec family. */
+function toMuxerCodec(codec: string | undefined): MuxerCodec {
+	if (!codec) return "avc";
+	if (codec.startsWith("avc1") || codec.startsWith("avc3")) return "avc";
+	if (codec.startsWith("hvc1") || codec.startsWith("hev1")) return "hevc";
+	if (codec.startsWith("vp09") || codec.startsWith("vp9")) return "vp9";
+	if (codec.startsWith("vp8")) return "vp8";
+	if (codec.startsWith("av01")) return "av1";
+	return "avc"; // safe default
+}
+
 export class VideoMuxer {
 	private output: Output | null = null;
 	private videoSource: EncodedVideoPacketSource | null = null;
@@ -32,8 +45,8 @@ export class VideoMuxer {
 			target: this.target,
 		});
 
-		// Create video source - codec will be deduced from metadata
-		this.videoSource = new EncodedVideoPacketSource("avc");
+		// Create video source — codec family derived from config
+		this.videoSource = new EncodedVideoPacketSource(toMuxerCodec(this.config.codec));
 		this.output.addVideoTrack(this.videoSource, {
 			frameRate: this.config.frameRate,
 		});

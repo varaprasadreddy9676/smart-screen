@@ -144,9 +144,15 @@ export class GifExporter {
 			// Initialize GIF encoder
 			// Loop: 0 = infinite loop, 1 = play once (no loop)
 			const repeat = this.config.loop ? 0 : 1;
+			const workerCount = navigator.hardwareConcurrency
+				? Math.min(navigator.hardwareConcurrency, 8)
+				: 4;
+
+			console.log("[GifExporter] Worker script URL:", GIF_WORKER_URL);
+			console.log("[GifExporter] Workers:", workerCount);
 
 			this.gif = new GIF({
-				workers: 4,
+				workers: workerCount,
 				quality: 10,
 				width: this.config.width,
 				height: this.config.height,
@@ -154,7 +160,7 @@ export class GifExporter {
 				repeat,
 				background: "#000000",
 				transparent: null,
-				dither: "FloydSteinberg",
+				dither: "FalseFloydSteinberg",
 			});
 
 			// Calculate effective duration and frame count (excluding trim regions)
@@ -229,13 +235,42 @@ export class GifExporter {
 			}
 
 			// Render the GIF
-			const blob = await new Promise<Blob>((resolve, _reject) => {
+			const blob = await new Promise<Blob>((resolve, reject) => {
+				// Stall detection: if no progress fires within 30s, the workers likely failed to load
+				let stallTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+					reject(
+						new Error(
+							"GIF rendering stalled — workers may have failed to load. " +
+								"Try reducing frame rate or resolution.",
+						),
+					);
+				}, 30_000);
+
+				const clearStall = () => {
+					if (stallTimer !== null) {
+						clearTimeout(stallTimer);
+						stallTimer = null;
+					}
+				};
+
 				this.gif!.on("finished", (blob: Blob) => {
+					clearStall();
 					resolve(blob);
 				});
 
-				// Track rendering progress
+				// Track rendering progress and reset stall timer on each tick
 				this.gif!.on("progress", (progress: number) => {
+					// Reset stall timer — workers are alive
+					clearStall();
+					stallTimer = setTimeout(() => {
+						reject(
+							new Error(
+								"GIF rendering stalled — workers may have failed to load. " +
+									"Try reducing frame rate or resolution.",
+							),
+						);
+					}, 30_000);
+
 					if (this.config.onProgress) {
 						this.config.onProgress({
 							currentFrame: totalFrames,
@@ -248,7 +283,13 @@ export class GifExporter {
 					}
 				});
 
-				// gif.js doesn't have a typed 'error' event, but we can catch errors in the try/catch
+				// Handle worker errors (gif.js emits 'error' but it's untyped)
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				(this.gif as any).on("error", (err: unknown) => {
+					clearStall();
+					reject(new Error(`GIF worker error: ${err}`));
+				});
+
 				this.gif!.render();
 			});
 

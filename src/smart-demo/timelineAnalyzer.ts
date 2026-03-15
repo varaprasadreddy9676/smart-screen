@@ -16,6 +16,7 @@ export interface DemoSegment {
 	zoomScale?: number; // e.g. 1.4
 	label?: string; // human-readable description
 	app?: string;
+	source?: "native" | "heuristic"; // native = hardware event, heuristic = inferred from cursor dwell
 }
 
 // Zoom scale for each interaction type
@@ -44,6 +45,7 @@ export function analyzeTimeline(events: InteractionEvent[]): DemoSegment[] {
 					zoomTarget: [event.x, event.y],
 					zoomScale: CLICK_ZOOM_SCALE,
 					label: `Click at (${Math.round(event.x * 100)}%, ${Math.round(event.y * 100)}%)`,
+					source: event.source,
 				};
 				if (!tooSoon) {
 					segments.push(segment);

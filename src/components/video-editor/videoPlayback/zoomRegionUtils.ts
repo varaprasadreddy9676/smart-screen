@@ -3,8 +3,11 @@ import { TRANSITION_WINDOW_MS } from "./constants";
 import { clamp01, smoothStep } from "./mathUtils";
 
 const ZOOM_IN_OVERLAP_MS = 420;
-const CHAINED_ZOOM_PAN_GAP_MS = 1_100;
-const CONNECTED_ZOOM_PAN_DURATION_MS = 760;
+// Extended to 2500ms so sequential clicks up to 2.5s apart smoothly pan
+// instead of snapping via independent fade-in/fade-out.
+const CHAINED_ZOOM_PAN_GAP_MS = 2_500;
+// Slightly slower pan (1000ms) feels more deliberate and professional.
+const CONNECTED_ZOOM_PAN_DURATION_MS = 1_000;
 
 type DominantRegionOptions = {
 	connectZooms?: boolean;
@@ -58,7 +61,12 @@ function getConnectedRegionPairs(regions: ZoomRegion[]) {
 			continue;
 		}
 
-		const transitionDurationMs = Math.min(CONNECTED_ZOOM_PAN_DURATION_MS, Math.max(220, gapMs));
+		// Cap at 75% of the gap so there's always a hold period at the destination
+		// before the next zoom region's own lead-in begins.
+		const transitionDurationMs = Math.min(
+			CONNECTED_ZOOM_PAN_DURATION_MS,
+			Math.max(300, Math.round(gapMs * 0.75)),
+		);
 		pairs.push({
 			currentRegion,
 			nextRegion,

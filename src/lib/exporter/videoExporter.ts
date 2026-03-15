@@ -44,6 +44,21 @@ interface VideoExporterConfig extends ExportConfig {
 	onProgress?: (progress: ExportProgress) => void;
 }
 
+/**
+ * Select the H.264 level codec string based on resolution and frame rate.
+ * avc1.64XXYY where XX = constraint flags (00), YY = level_idc in hex.
+ * Level 5.1 (0x33=51) supports up to ~4K@30fps.
+ * Level 5.2 (0x34=52) supports up to ~4K@60fps.
+ * Level 6.0 (0x3C=60) supports up to ~8K@30fps.
+ */
+function selectH264Codec(width: number, height: number, fps: number): string {
+	const macroblocks = Math.ceil(width / 16) * Math.ceil(height / 16);
+	const mbps = macroblocks * fps;
+	if (mbps > 2_073_600) return "avc1.64003C"; // Level 6.0
+	if (mbps > 983_040) return "avc1.640034"; // Level 5.2
+	return "avc1.640033"; // Level 5.1 — handles 1080p@60fps and 4K@30fps
+}
+
 export class VideoExporter {
 	private config: VideoExporterConfig;
 	private streamingDecoder: StreamingVideoDecoder | null = null;
@@ -51,6 +66,8 @@ export class VideoExporter {
 	private encoder: VideoEncoder | null = null;
 	private muxer: VideoMuxer | null = null;
 	private cancelled = false;
+	private encoderError: Error | null = null;
+	private muxingError: Error | null = null;
 	private encodeQueue = 0;
 	// Increased queue size for better throughput with hardware encoding
 	private readonly MAX_ENCODE_QUEUE = 120;
@@ -164,12 +181,13 @@ export class VideoExporter {
 						this.encoder.encodeQueueSize >= this.MAX_ENCODE_QUEUE &&
 						!this.cancelled
 					) {
-						await new Promise((resolve) => setTimeout(resolve, 5));
+						await new Promise<void>((resolve) => setTimeout(resolve, 0));
 					}
 
 					if (this.encoder && this.encoder.state === "configured") {
 						this.encodeQueue++;
-						this.encoder.encode(exportFrame, { keyFrame: frameIndex % 150 === 0 });
+						const keyFrameInterval = Math.max(1, Math.round(this.config.frameRate * 2));
+					this.encoder.encode(exportFrame, { keyFrame: frameIndex % keyFrameInterval === 0 });
 					} else {
 						console.warn(`[Frame ${frameIndex}] Encoder not ready! State: ${this.encoder?.state}`);
 					}
@@ -190,17 +208,33 @@ export class VideoExporter {
 				},
 			);
 
+			if (this.encoderError) {
+				throw this.encoderError;
+			}
+
 			if (this.cancelled) {
 				return { success: false, error: "Export cancelled" };
 			}
 
-			// Finalize encoding
+			// Finalize encoding — with timeout to prevent indefinite hang
 			if (this.encoder && this.encoder.state === "configured") {
-				await this.encoder.flush();
+				await Promise.race([
+					this.encoder.flush(),
+					new Promise<never>((_, reject) =>
+						setTimeout(
+							() => reject(new Error("Encoder flush timed out after 60s")),
+							60_000,
+						),
+					),
+				]);
 			}
 
 			// Wait for all muxing operations to complete
 			await Promise.all(this.muxingPromises);
+
+			if (this.muxingError) {
+				throw this.muxingError;
+			}
 
 			// Finalize muxer and get output blob
 			const blob = await this.muxer!.finalize();
@@ -269,6 +303,7 @@ export class VideoExporter {
 						}
 					} catch (error) {
 						console.error("Muxing error:", error);
+						this.muxingError = this.muxingError ?? (error instanceof Error ? error : new Error(String(error)));
 					}
 				})();
 
@@ -277,12 +312,12 @@ export class VideoExporter {
 			},
 			error: (error) => {
 				console.error("[VideoExporter] Encoder error:", error);
-				// Stop export encoding failed
+				this.encoderError = error instanceof Error ? error : new Error(String(error));
 				this.cancelled = true;
 			},
 		});
 
-		const codec = this.config.codec || "avc1.640033";
+		const codec = this.config.codec || selectH264Codec(this.config.width, this.config.height, this.config.frameRate);
 
 		const encoderConfig: VideoEncoderConfig = {
 			codec,
@@ -360,5 +395,7 @@ export class VideoExporter {
 		this.chunkCount = 0;
 		this.videoDescription = undefined;
 		this.videoColorSpace = undefined;
+		this.encoderError = null;
+		this.muxingError = null;
 	}
 }

@@ -73,6 +73,8 @@ export class FrameRenderer {
 	private shadowCtx: CanvasRenderingContext2D | null = null;
 	private compositeCanvas: HTMLCanvasElement | null = null;
 	private compositeCtx: CanvasRenderingContext2D | null = null;
+	// Pre-blurred background — computed once during init, reused every frame
+	private blurredBgCanvas: HTMLCanvasElement | null = null;
 	private config: FrameRenderConfig;
 	private animationState: AnimationState;
 	private layoutCache: {
@@ -83,6 +85,7 @@ export class FrameRenderer {
 		maskRect: { x: number; y: number; width: number; height: number };
 	} | null = null;
 	private currentVideoTime = 0;
+	private layoutInitialized = false;
 
 	constructor(config: FrameRenderConfig) {
 		this.config = config;
@@ -287,6 +290,17 @@ export class FrameRenderer {
 
 		// Store the background canvas for compositing
 		this.backgroundSprite = bgCanvas as unknown as Sprite;
+
+		// Pre-compute blurred background once — reused every frame instead of blurring per-frame
+		if (this.config.showBlur) {
+			this.blurredBgCanvas = document.createElement("canvas");
+			this.blurredBgCanvas.width = this.config.width;
+			this.blurredBgCanvas.height = this.config.height;
+			const blurCtx = this.blurredBgCanvas.getContext("2d")!;
+			blurCtx.filter = "blur(6px)";
+			blurCtx.drawImage(bgCanvas, 0, 0, this.config.width, this.config.height);
+			blurCtx.filter = "none";
+		}
 	}
 
 	async renderFrame(videoFrame: VideoFrame, timestamp: number): Promise<void> {
@@ -302,15 +316,18 @@ export class FrameRenderer {
 			this.videoSprite = new Sprite(texture);
 			this.videoContainer.addChild(this.videoSprite);
 		} else {
-			// Destroy old texture to avoid memory leaks, then create new one
+			// Destroy old GPU texture, create new one from the new VideoFrame
 			const oldTexture = this.videoSprite.texture;
 			const newTexture = Texture.from(videoFrame as unknown as HTMLCanvasElement);
 			this.videoSprite.texture = newTexture;
 			oldTexture.destroy(true);
 		}
 
-		// Apply layout
-		this.updateLayout();
+		// Apply layout only once — static values never change during a single export
+		if (!this.layoutInitialized) {
+			this.updateLayout();
+			this.layoutInitialized = true;
+		}
 
 		const timeMs = this.currentVideoTime * 1000;
 		const TICKS_PER_FRAME = 1;
@@ -583,18 +600,13 @@ export class FrameRenderer {
 		// Clear composite canvas
 		ctx.clearRect(0, 0, w, h);
 
-		// Step 1: Draw background layer (with optional blur, not affected by zoom)
+		// Step 1: Draw background layer (use pre-blurred canvas if blur enabled — computed once in init)
 		if (this.backgroundSprite) {
-			const bgCanvas = this.backgroundSprite as unknown as HTMLCanvasElement;
-
-			if (this.config.showBlur) {
-				ctx.save();
-				ctx.filter = "blur(6px)"; // Canvas blur is weaker than CSS
-				ctx.drawImage(bgCanvas, 0, 0, w, h);
-				ctx.restore();
-			} else {
-				ctx.drawImage(bgCanvas, 0, 0, w, h);
-			}
+			const bgCanvas =
+				this.config.showBlur && this.blurredBgCanvas
+					? this.blurredBgCanvas
+					: (this.backgroundSprite as unknown as HTMLCanvasElement);
+			ctx.drawImage(bgCanvas, 0, 0, w, h);
 		} else {
 			console.warn("[FrameRenderer] No background sprite found during compositing!");
 		}
@@ -637,6 +649,7 @@ export class FrameRenderer {
 	}
 
 	destroy(): void {
+		this.layoutInitialized = false;
 		if (this.videoSprite) {
 			this.videoSprite.destroy();
 			this.videoSprite = null;
@@ -654,5 +667,6 @@ export class FrameRenderer {
 		this.shadowCtx = null;
 		this.compositeCanvas = null;
 		this.compositeCtx = null;
+		this.blurredBgCanvas = null;
 	}
 }

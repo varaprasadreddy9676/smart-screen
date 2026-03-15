@@ -9,26 +9,35 @@
 import type { ZoomDepth, ZoomRegion } from "@/components/video-editor/types";
 import type { DemoSegment } from "../timelineAnalyzer";
 
-const CLICK_ZOOM_PRE_ROLL_MS = 90;
-const CLICK_ZOOM_POST_ROLL_MS = 260;
-const CLICK_ZOOM_MIN_DURATION_MS = 400;
-const CLICK_ZOOM_MAX_DURATION_MS = 620;
-const CLICK_CLUSTER_ZOOM_MAX_DURATION_MS = 920;
+// Pre-roll: start zooming this many ms before the click fires.
+// Must be large enough that zoomInEnd (startMs + ZOOM_IN_OVERLAP_MS=420)
+// extends past endMs, giving the hold period room to exist.
+const CLICK_ZOOM_PRE_ROLL_MS = 150;
+const CLICK_ZOOM_POST_ROLL_MS = 500;
+const CLICK_ZOOM_MIN_DURATION_MS = 650;
+const CLICK_ZOOM_MAX_DURATION_MS = 950;
+const CLICK_CLUSTER_ZOOM_MAX_DURATION_MS = 1200;
 const TYPING_ZOOM_TAIL_MS = 820;
 const TYPING_ZOOM_PRE_ROLL_MS = 240;
 const TYPING_ZOOM_MIN_DURATION_MS = 1_100;
 const TYPING_ZOOM_MAX_DURATION_MS = 2_400;
-const CLICK_ZOOM_DEPTH: ZoomDepth = 1; // 1.25x keeps more of the UI visible
+// Depth 2 (1.5×) for single native clicks — visible and meaningful.
+// Depth 1 (1.25×) for heuristic-only single clicks — subtle.
+const NATIVE_CLICK_ZOOM_DEPTH: ZoomDepth = 2;
+const HEURISTIC_CLICK_ZOOM_DEPTH: ZoomDepth = 1;
 const TYPING_ZOOM_DEPTH: ZoomDepth = 2;
 const CLUSTER_GAP_MS = 720;
 const CLUSTER_DISTANCE_THRESHOLD = 0.11;
 const SAME_SHOT_DISTANCE_THRESHOLD = 0.09;
 const REFRAME_DISTANCE_THRESHOLD = 0.18;
-const MIN_REFRAME_GAP_MS = 1_100;
+// Lowered from 1100ms: real demos frequently have sequential clicks 700ms+ apart.
+const MIN_REFRAME_GAP_MS = 700;
 const EDGE_MARGIN = 0.1;
+// Native clicks always pass threshold (0.88 > 0.72); heuristic clicks are 0.72.
+const NATIVE_CLICK_CONFIDENCE = 0.88;
+const HEURISTIC_CLICK_CONFIDENCE = 0.72;
 const CLICK_CONFIDENCE_THRESHOLD = 0.72;
 const OVERRIDE_REFRAME_CONFIDENCE = 0.92;
-const SINGLE_CLICK_SUPPRESSION_GAP_MS = 1_100;
 
 let _idCounter = 1;
 
@@ -45,6 +54,7 @@ export function resetAutoZoomIds(): void {
 
 interface ZoomCandidate {
 	action: "click" | "typing";
+	source: "native" | "heuristic";
 	startMs: number;
 	endMs: number;
 	depth: ZoomDepth;
@@ -113,6 +123,12 @@ function buildCandidate(cluster: DemoSegment[]): ZoomCandidate | null {
 	)
 		? "typing"
 		: "click";
+
+	// If any segment in the cluster came from a real hardware event, treat the
+	// whole cluster as native — native events are more reliable focus points.
+	const hasNative = zoomableSegments.some((s) => s.source === "native");
+	const source: ZoomCandidate["source"] = hasNative ? "native" : "heuristic";
+
 	const focus = averageFocus(zoomableSegments);
 	const first = zoomableSegments[0]!;
 	const last = zoomableSegments[zoomableSegments.length - 1]!;
@@ -136,7 +152,10 @@ function buildCandidate(cluster: DemoSegment[]): ZoomCandidate | null {
 				: CLICK_ZOOM_MAX_DURATION_MS,
 	);
 
-	let confidence = action === "typing" ? 1 : 0.72;
+	// Native clicks get higher base confidence, ensuring single native clicks
+	// always clear CLICK_CONFIDENCE_THRESHOLD.
+	let confidence =
+		action === "typing" ? 1 : source === "native" ? NATIVE_CLICK_CONFIDENCE : HEURISTIC_CLICK_CONFIDENCE;
 	if (zoomableSegments.length > 1) {
 		confidence += 0.14;
 	}
@@ -144,12 +163,22 @@ function buildCandidate(cluster: DemoSegment[]): ZoomCandidate | null {
 		confidence -= 0.16;
 	}
 
+	// Depth: use a more visible zoom for native clicks; clusters always get depth 2+.
+	let depth: ZoomDepth;
+	if (action === "typing") {
+		depth = TYPING_ZOOM_DEPTH;
+	} else if (zoomableSegments.length > 1) {
+		depth = 2;
+	} else {
+		depth = source === "native" ? NATIVE_CLICK_ZOOM_DEPTH : HEURISTIC_CLICK_ZOOM_DEPTH;
+	}
+
 	return {
 		action,
+		source,
 		startMs,
 		endMs,
-		depth:
-			action === "typing" ? TYPING_ZOOM_DEPTH : zoomableSegments.length > 1 ? 2 : CLICK_ZOOM_DEPTH,
+		depth,
 		focus,
 		confidence: Math.max(0, Math.min(1, confidence)),
 		segmentCount: zoomableSegments.length,
@@ -218,6 +247,7 @@ export function buildAutoZoomRegions(segments: DemoSegment[]): ZoomRegion[] {
 		const focusDistance = distance(last.focus, candidate.focus);
 		const gapMs = candidate.startMs - last.endMs;
 
+		// Same-shot merge: close in both space and time → extend current shot.
 		if (focusDistance <= SAME_SHOT_DISTANCE_THRESHOLD && gapMs <= CLUSTER_GAP_MS) {
 			last.endMs = clampDuration(
 				last.startMs,
@@ -231,30 +261,31 @@ export function buildAutoZoomRegions(segments: DemoSegment[]): ZoomRegion[] {
 				cx: (last.focus.cx + candidate.focus.cx) / 2,
 				cy: (last.focus.cy + candidate.focus.cy) / 2,
 			};
+			// Upgrade source: if either shot had a native event, the merged shot is native.
+			if (candidate.source === "native") {
+				last.source = "native";
+			}
 			continue;
 		}
 
+		// A candidate can override the gap suppression if it's a large reframe
+		// triggered by a reliable event (high-confidence typing or a native click).
 		const requiresOverride =
 			focusDistance >= REFRAME_DISTANCE_THRESHOLD &&
-			candidate.confidence >= OVERRIDE_REFRAME_CONFIDENCE &&
-			candidate.action === "typing";
+			(
+				(candidate.confidence >= OVERRIDE_REFRAME_CONFIDENCE && candidate.action === "typing") ||
+				candidate.source === "native"
+			);
+
+		// Too soon and not important enough — skip to avoid camera breathing.
 		if (gapMs < MIN_REFRAME_GAP_MS && !requiresOverride) {
 			continue;
 		}
 
+		// Small reframe (focus barely moved) with low confidence — skip.
 		if (
 			focusDistance < REFRAME_DISTANCE_THRESHOLD &&
 			candidate.confidence < OVERRIDE_REFRAME_CONFIDENCE
-		) {
-			continue;
-		}
-
-		if (
-			candidate.action === "click" &&
-			candidate.segmentCount === 1 &&
-			last.action === "click" &&
-			last.segmentCount === 1 &&
-			gapMs < SINGLE_CLICK_SUPPRESSION_GAP_MS
 		) {
 			continue;
 		}
