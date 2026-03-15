@@ -78,7 +78,6 @@ interface SmartDemoPanelProps {
 	transcriptWarnings: TranscriptSanityWarning[];
 	localSpeechAnchorCount: number;
 	localFocusMomentCount: number;
-	onAISettingsClick: () => void;
 	onAIPromptChange: (value: string) => void;
 	onImportTranscript: () => Promise<void>;
 	onTranscribeAudio: () => Promise<void>;
@@ -126,7 +125,6 @@ export function SmartDemoPanel({
 	transcriptWarnings,
 	localSpeechAnchorCount,
 	localFocusMomentCount,
-	onAISettingsClick,
 	onAIPromptChange,
 	onImportTranscript,
 	onTranscribeAudio,
@@ -656,20 +654,13 @@ export function SmartDemoPanel({
 					)}
 				</div>
 
-				<div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
-					<div className="flex items-center gap-2">
-						<span className="text-xs font-medium text-slate-100">AI Refine</span>
-						<span className="rounded-full bg-cyan-900/40 px-2 py-0.5 text-[10px] text-cyan-200">
-							{aiConfigured ? "Configured" : "Needs setup"}
-						</span>
-						<button
-							type="button"
-							onClick={onAISettingsClick}
-							className="ml-auto text-[10px] text-cyan-300/80 hover:text-cyan-200"
-						>
-							Settings
-						</button>
-					</div>
+					<div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
+						<div className="flex items-center gap-2">
+							<span className="text-xs font-medium text-slate-100">AI Refine</span>
+							<span className="rounded-full bg-cyan-900/40 px-2 py-0.5 text-[10px] text-cyan-200">
+								{aiConfigured ? "Configured" : "Needs setup"}
+							</span>
+						</div>
 
 					<div className="mt-3 grid grid-cols-3 gap-2">
 						<MiniStateBadge label="Cursor" value={hasTelemetry ? "Ready" : "Missing"} />

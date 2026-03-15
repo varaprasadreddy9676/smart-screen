@@ -141,8 +141,6 @@ interface SettingsPanelProps {
 	onSpeedChange?: (speed: PlaybackSpeed) => void;
 	onSpeedDelete?: (id: string) => void;
 	smartDemoSlot?: React.ReactNode;
-	onOpenAISettings?: () => void;
-	aiConfigStatus?: string;
 }
 
 export default SettingsPanel;
@@ -218,8 +216,6 @@ export function SettingsPanel({
 	onSpeedChange,
 	onSpeedDelete,
 	smartDemoSlot,
-	onOpenAISettings,
-	aiConfigStatus,
 }: SettingsPanelProps) {
 	const [wallpaperPaths, setWallpaperPaths] = useState<string[]>([]);
 	const [customImages, setCustomImages] = useState<string[]>([]);
@@ -354,8 +350,8 @@ export function SettingsPanel({
 	}
 
 	return (
-		<div className="flex-[2] min-w-0 bg-[#09090b] border border-white/5 rounded-2xl flex flex-col shadow-xl h-full overflow-hidden">
-			<div className="flex-1 overflow-y-auto custom-scrollbar p-4 pb-0">
+		<div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-white/5 bg-[#09090b] shadow-xl">
+			<div className="min-h-0 flex-1 overflow-y-auto overscroll-contain custom-scrollbar p-4 pb-4">
 				<div className="mb-4">
 					<div className="flex items-center justify-between mb-3">
 						<span className="text-sm font-medium text-slate-200">Zoom Level</span>
@@ -1151,23 +1147,6 @@ export function SettingsPanel({
 						Save Project
 					</Button>
 				</div>
-
-				{onOpenAISettings && (
-					<Button
-						type="button"
-						variant="outline"
-						onClick={onOpenAISettings}
-						className="mb-2 h-8 w-full justify-between text-[10px] font-medium gap-1.5 bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
-					>
-						<span className="flex items-center gap-1.5">
-							<Sparkles className="w-3.5 h-3.5 text-purple-400" />
-							AI Settings
-						</span>
-						<span className="text-[9px] uppercase tracking-wide text-slate-500">
-							{aiConfigStatus ?? "Not configured"}
-						</span>
-					</Button>
-				)}
 
 				<Button
 					type="button"

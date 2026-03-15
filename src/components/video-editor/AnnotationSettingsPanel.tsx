@@ -127,7 +127,7 @@ export function AnnotationSettingsPanel({
 	};
 
 	return (
-		<div className="flex-[2] min-w-0 bg-[#09090b] border border-white/5 rounded-2xl p-4 flex flex-col shadow-xl h-full overflow-y-auto custom-scrollbar">
+		<div className="flex h-full min-h-0 min-w-0 flex-col overflow-y-auto overscroll-contain rounded-2xl border border-white/5 bg-[#09090b] p-4 shadow-xl custom-scrollbar">
 			<div className="mb-6">
 				<div className="flex items-center justify-between mb-4">
 					<span className="text-sm font-medium text-slate-200">Annotation Settings</span>

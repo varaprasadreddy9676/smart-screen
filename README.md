@@ -5,244 +5,209 @@
 <h1 align="center">OpenScreen Smart Demo</h1>
 
 <p align="center">
-  <strong>Screen recording, timeline editing, and optional BYOK AI-assisted demo analysis.</strong><br/>
-  Built on top of OpenScreen with a local heuristic Smart Demo pipeline and optional OpenAI or Ollama refinement.
+  <strong>Record a screen demo, understand what happened, and turn it into a polished walkthrough.</strong>
+</p>
+
+<p align="center">
+  Local-first Smart Demo analysis, optional BYOK AI, transcript-aware zooms, captions, click telemetry, and export-ready output.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-MIT-green" />
-  <img src="https://img.shields.io/badge/built%20on-OpenScreen-blue" />
   <img src="https://img.shields.io/badge/desktop-Electron-black" />
+  <img src="https://img.shields.io/badge/built%20on-OpenScreen-blue" />
 </p>
 
 ---
 
-## What This Project Is
+## Pitch
 
-OpenScreen Smart Demo is a desktop app for recording screen demos and polishing them inside a timeline editor.
+Most screen recorders stop at capture. Most AI demo tools over-edit, over-zoom, or hide the real workflow behind too much automation.
 
-It has two Smart Demo layers:
+OpenScreen Smart Demo is built for a better path:
 
-- `Local Smart Demo`: heuristic analysis of cursor telemetry to detect clicks, typing, navigation, and inactivity.
-- `AI Assist`: optional BYOK analysis on top of the local signals, using a user-selected provider and model.
+- record normally
+- capture real interaction signals
+- understand narration and clicks together
+- suggest edits instead of silently forcing them
+- export a polished demo with captions, zooms, trims, and keystroke overlays
 
-The app works without any API key. AI is additive, not required.
+This project is designed to work in three modes:
 
----
+- `Offline`: local Smart Demo heuristics, no key required
+- `Hybrid`: local analysis plus optional BYOK AI refinement
+- `Local AI`: Ollama for teams that want to stay on-device
 
-## Current AI Story
+## What Makes It Useful
 
-The codebase no longer treats all Smart Demo functionality as “AI”.
+- `Speech-grounded Smart Demo`
+  The app can use transcript + cursor + frames together, so spoken instructions like “click this button” or “look at this chart” become better zooms, focus moments, and step titles.
 
-What is local and deterministic:
+- `Native interaction telemetry`
+  On macOS, the app can capture true native click telemetry and global keystrokes for cleaner demo polishing.
 
-- click detection from cursor velocity and dwell
-- typing detection from cursor stillness
-- navigation and window-change heuristics
-- automatic zoom suggestions
-- click highlight annotations
-- silence-based trim suggestions
-- generated tutorial steps from templates
+- `Better polish controls`
+  Instead of random AI output, the editor supports selective apply for AI zooms and trims, one-click polish, calm zoom behavior, click emphasis, captions, and keystroke overlays.
 
-What is optional BYOK AI:
+- `Before / after demoability`
+  The editor has an `Original` vs `Polished` preview mode so judges can immediately see the transformation.
 
-- refined Smart Demo summary
-- improved step titles and descriptions
-- AI-generated zoom suggestions
-- AI-generated trim suggestions
+## Core Features
 
-Supported providers today:
+### Recording
+
+- screen/window recording
+- microphone recording enabled by default
+- pause / resume
+- local recording storage
+- native click telemetry on macOS
+- native keystroke telemetry on macOS
+
+### Editor
+
+- timeline-based editing
+- zoom regions
+- trim regions
+- speed regions
+- annotations
+- crop / padding / wallpaper
+- before / after preview mode
+
+### Smart Demo
+
+- local click / typing / navigation / silence analysis
+- calmer auto-zoom planning
+- transcript-aware callouts
+- one-click `Polish Demo`
+- speech-aware AI refinement
+
+### Transcript And Captions
+
+- import transcript from common formats
+- built-in transcription backends
+- transcript review / editing
+- SRT / VTT export
+- preview captions
+- burned-in captions for export
+
+### AI Assist
+
+- BYOK provider settings
+- OpenAI support
+- Ollama support
+- local Ollama model discovery
+- model guidance for base vs instruction vs vision-capable models
+- AI-generated summaries, step titles, zooms, trims, and focus moments
+
+## Demo Flow
+
+The strongest demo path is:
+
+1. Record a narrated walkthrough.
+2. Open the editor and show `Original Preview`.
+3. Transcribe audio or import a transcript.
+4. Run `One-Click Polish Demo`.
+5. Show `Polished Preview`.
+6. Open `AI Assist` and refine further.
+7. Export MP4 + captions.
+
+For a ready-to-use judging script, see [HACKATHON_DEMO.md](/Users/sai/Documents/GitHub/openscreen-smart-demo/HACKATHON_DEMO.md).
+
+For a concise submission brief, see [HACKATHON_SUBMISSION.md](/Users/sai/Documents/GitHub/openscreen-smart-demo/HACKATHON_SUBMISSION.md).
+
+## Architecture
+
+```text
+Record screen
+  ->
+Capture video + cursor telemetry + optional mic audio
+  ->
+Open editor with recording sidecars
+  ->
+Run local Smart Demo analysis
+  ->
+Optionally run BYOK AI refinement
+  ->
+Apply zooms / trims / captions / callouts / overlays
+  ->
+Export MP4 or GIF
+```
+
+Main subsystems:
+
+- `electron/`
+  main process, secure storage, IPC, native telemetry, transcription backends
+- `shared/`
+  shared cross-process AI and transcription contracts
+- `src/smart-demo/`
+  local heuristic Smart Demo pipeline
+- `src/lib/ai/`
+  AI request building, grounding, transcript parsing, suggestion mapping
+- `src/components/video-editor/`
+  editor UI, playback, timeline, transcript review, AI settings
+- `src/lib/exporter/`
+  export pipeline, captions, keystrokes, click emphasis
+
+## Providers And Transcription
+
+### AI providers
 
 - `OpenAI`
 - `Ollama`
 
-Ollama support is pragmatic:
+### Transcription backends
 
-- text-only analysis works with local heuristic input plus the user prompt
-- vision mode is optional and only makes sense for vision-capable local models
-- the settings dialog fetches installed Ollama models from the local runtime and recommends likely good candidates
+- transcript import
+- OpenAI transcription
+- macOS-native transcription path
 
----
+The app keeps transcription and AI analysis as separate concerns. You can use:
 
-## How It Works
+- no AI + imported transcript
+- OpenAI transcription + Ollama analysis
+- local-only analysis without any provider
 
-```text
-Record screen
-   ->
-Capture cursor telemetry at 10 Hz
-   ->
-Open editor with video + cursor sidecar
-   ->
-Run Local Smart Demo analysis
-   ->
-Optionally run BYOK AI refinement
-   ->
-Apply zooms / highlights / trims
-   ->
-Export MP4 or GIF
-```
+## Security
 
-Smart Demo local signals:
+- provider secrets are kept out of renderer code
+- AI config is stored in the Electron main process
+- project files do not store API keys
+- the app remains usable without cloud AI
 
-| Signal | Detection method |
-|---|---|
-| Click | cursor moves -> sudden stop -> 150-800 ms dwell -> resumes |
-| Typing | cursor velocity stays below threshold for > 1 second |
-| Window change | instantaneous jump > 60% of display width |
-| Navigation | fast sweep across a large distance |
-| Silence | low cursor movement for > 3 seconds |
-
-Generated local effects:
-
-- zoom regions around clicks and typing
-- click pulse annotations
-- tutorial steps
-- silence trim suggestions
-
----
-
-## Quick Start
+## Local Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-Useful commands:
+Useful checks:
 
 ```bash
 npm test
 npx tsc --noEmit
+npx vite build
+```
+
+Packaging:
+
+```bash
 npm run build:mac
 ```
 
-`npm run build` runs TypeScript, renderer/main/preload bundling, and Electron packaging.
+## Current Product Truth
 
----
+This repo intentionally separates:
 
-## Smart Demo Usage
+- `local Smart Demo heuristics`
+- `optional model-driven AI refinement`
 
-### Local Smart Demo
-
-1. Select a screen or window source in the HUD overlay.
-2. Click `Smart` to start recording.
-3. Record your workflow normally.
-4. Stop recording to open the editor.
-5. Open the `Smart Demo` section in the right sidebar.
-6. Click `Generate Smart Demo`.
-7. Review detected steps, zoom count, and silence suggestions.
-8. Apply zoom/highlight suggestions or trim silences.
-
-### AI Assist
-
-1. Open `AI Settings` in the editor.
-2. Choose `OpenAI` or `Ollama`.
-3. Enter a model and any provider-specific connection details.
-4. For Ollama, use the installed-model list and recommended local models in the dialog.
-5. Optionally enable `Vision mode` if the selected model supports images.
-6. Back in `Smart Demo`, add an optional goal prompt.
-7. Click `Generate With AI`.
-8. Review the AI summary and suggestions, then apply them.
-
-Notes:
-
-- OpenAI requires an API key.
-- Ollama usually does not require a key for local use.
-- Vision mode should stay off unless the selected model is actually multimodal.
-- Base models often do poorly with the app's structured JSON output contract.
-
----
-
-## Architecture
-
-### App Surfaces
-
-- HUD overlay recorder
-- source selector window
-- full editor window
-
-### Main Process
-
-- window creation and switching
-- tray and menu integration
-- secure AI config storage
-- provider IPC handlers
-- cursor telemetry capture
-
-### Renderer
-
-- recording controls
-- video playback and timeline editor
-- project persistence
-- Smart Demo UI
-- AI settings dialog
-
-### Smart Demo Modules
-
-```text
-src/smart-demo/
-  interactionRecorder.ts
-  timelineAnalyzer.ts
-  inactivityDetector.ts
-  stepGenerator.ts
-  effects/
-    autoZoom.ts
-    clickHighlight.ts
-```
-
-### AI Modules
-
-```text
-shared/ai.ts
-electron/ai/
-  store.ts
-  runSmartDemoAI.ts
-  ollamaModels.ts
-  prompts.ts
-  providers/
-    openai.ts
-    ollama.ts
-src/lib/ai/
-  frameSampler.ts
-  buildSmartDemoAIRequest.ts
-  applySmartDemoAISuggestion.ts
-  modelGuidance.ts
-```
-
----
-
-## Security Notes
-
-- API keys are not stored in the renderer.
-- Provider secrets stay in the Electron main process.
-- Stored credentials use Electron `safeStorage` when available.
-- Project files do not store provider secrets.
-
----
-
-## Testing
-
-Current automated coverage focuses on the new AI boundary and integration seams:
-
-- shared AI validators
-- Ollama model list parsing
-- provider behavior for Ollama
-- AI request construction
-- AI suggestion mapping
-- encrypted config store behavior
-
-Run:
-
-```bash
-npm test
-```
-
----
+Not every “smart” feature is AI. The local pipeline is still valuable on its own, and the AI layer is additive rather than mandatory.
 
 ## Attribution
 
 Built on top of **OpenScreen**
 
-- Original repository: https://github.com/siddharthvaddem/openscreen
+- Original repository: [siddharthvaddem/openscreen](https://github.com/siddharthvaddem/openscreen)
 - Original author: [@siddharthvaddem](https://github.com/siddharthvaddem)
 - License: MIT

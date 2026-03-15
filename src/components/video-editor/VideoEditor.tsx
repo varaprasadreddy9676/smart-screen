@@ -9,7 +9,7 @@ import {
 	type TranscriptSegment,
 } from "@shared/ai";
 import type { Span } from "dnd-timeline";
-import { Sparkles } from "lucide-react";
+import { FlipHorizontal2, Redo2, Sparkles, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { toast } from "sonner";
@@ -54,6 +54,7 @@ import {
 	deriveNextId,
 	fromFileUrl,
 	normalizeProjectEditor,
+	type ProjectEditorState,
 	toFileUrl,
 	validateProjectData,
 	WALLPAPER_PATHS,
@@ -105,6 +106,7 @@ export default function VideoEditor() {
 	const [shadowIntensity, setShadowIntensity] = useState(0);
 	const [showBlur, setShowBlur] = useState(false);
 	const [motionBlurEnabled, setMotionBlurEnabled] = useState(false);
+	const [showOriginalPreview, setShowOriginalPreview] = useState(false);
 	const [connectZooms, setConnectZooms] = useState(true);
 	const [zoomMotionBlur, setZoomMotionBlur] = useState(DEFAULT_ZOOM_MOTION_BLUR);
 	const [borderRadius, setBorderRadius] = useState(0);
@@ -164,6 +166,8 @@ export default function VideoEditor() {
 	const [gifSizePreset, setGifSizePreset] = useState<GifSizePreset>("medium");
 	const [exportedFilePath, setExportedFilePath] = useState<string | undefined>(undefined);
 	const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null);
+	const [undoStack, setUndoStack] = useState<string[]>([]);
+	const [redoStack, setRedoStack] = useState<string[]>([]);
 
 	const videoPlaybackRef = useRef<VideoPlaybackRef>(null);
 	const nextZoomIdRef = useRef(1);
@@ -175,123 +179,36 @@ export default function VideoEditor() {
 	const nextAnnotationZIndexRef = useRef(1); // Track z-index for stacking order
 	const exporterRef = useRef<VideoExporter | null>(null);
 	const lastTranscriptVideoSourceRef = useRef<string | null>(null);
+	const isRestoringHistoryRef = useRef(false);
+	const lastHistorySnapshotRef = useRef<string | null>(null);
 
-	const applyLoadedProject = useCallback(async (candidate: unknown, path?: string | null) => {
-		if (!validateProjectData(candidate)) {
-			return false;
-		}
-
-		const project = candidate;
-		const sourcePath = project.videoPath;
-		const normalizedEditor = normalizeProjectEditor(project.editor);
-
-		try {
-			videoPlaybackRef.current?.pause();
-		} catch {
-			// no-op
-		}
-		setIsPlaying(false);
-		setCurrentTime(0);
-		setDuration(0);
-
-		setError(null);
-		setVideoSourcePath(sourcePath);
-		setVideoPath(toFileUrl(sourcePath));
-		setCurrentProjectPath(path ?? null);
-
-		setWallpaper(normalizedEditor.wallpaper);
-		setShadowIntensity(normalizedEditor.shadowIntensity);
-		setShowBlur(normalizedEditor.showBlur);
-		setMotionBlurEnabled(normalizedEditor.motionBlurEnabled);
-		setConnectZooms(normalizedEditor.connectZooms);
-		setZoomMotionBlur(normalizedEditor.zoomMotionBlur);
-		setBorderRadius(normalizedEditor.borderRadius);
-		setPadding(normalizedEditor.padding);
-		setCropRegion(normalizedEditor.cropRegion);
-		setZoomRegions(normalizedEditor.zoomRegions);
-		setTrimRegions(normalizedEditor.trimRegions);
-		setSpeedRegions(normalizedEditor.speedRegions);
-		setAnnotationRegions(normalizedEditor.annotationRegions);
-		setAspectRatio(normalizedEditor.aspectRatio);
-		setExportQuality(normalizedEditor.exportQuality);
-		setExportFormat(normalizedEditor.exportFormat);
-		setGifFrameRate(normalizedEditor.gifFrameRate);
-		setGifLoop(normalizedEditor.gifLoop);
-		setGifSizePreset(normalizedEditor.gifSizePreset);
-		setTranscriptSegments(normalizedEditor.transcriptSegments);
-		setCaptionSettings(normalizedEditor.captionSettings);
-		setCursorClickPulseSettings(normalizedEditor.cursorClickPulseSettings);
-		setKeystrokeOverlaySettings(normalizedEditor.keystrokeOverlaySettings);
-		setTranscriptSourceLabel(
-			normalizedEditor.transcriptSegments.length > 0 ? "Saved project transcript" : null,
-		);
-		setTranscriptStatus(normalizedEditor.transcriptSegments.length > 0 ? "ready" : "idle");
-		setTranscriptError(null);
-
-		setSelectedZoomId(null);
-		setSelectedTrimId(null);
-		setSelectedSpeedId(null);
-		setSelectedAnnotationId(null);
-
-		nextZoomIdRef.current = deriveNextId(
-			"zoom",
-			normalizedEditor.zoomRegions.map((region) => region.id),
-		);
-		nextTrimIdRef.current = deriveNextId(
-			"trim",
-			normalizedEditor.trimRegions.map((region) => region.id),
-		);
-		nextSpeedIdRef.current = deriveNextId(
-			"speed",
-			normalizedEditor.speedRegions.map((region) => region.id),
-		);
-		nextAnnotationIdRef.current = deriveNextId(
-			"annotation",
-			normalizedEditor.annotationRegions.map((region) => region.id),
-		);
-		nextAnnotationZIndexRef.current =
-			normalizedEditor.annotationRegions.reduce((max, region) => Math.max(max, region.zIndex), 0) +
-			1;
-
-		setLastSavedSnapshot(JSON.stringify(createProjectData(sourcePath, normalizedEditor)));
-		return true;
-	}, []);
-
-	const currentProjectSnapshot = useMemo(() => {
-		const sourcePath = videoSourcePath ?? (videoPath ? fromFileUrl(videoPath) : null);
-		if (!sourcePath) {
-			return null;
-		}
-		return JSON.stringify(
-			createProjectData(sourcePath, {
-				wallpaper,
-				shadowIntensity,
-				showBlur,
-				motionBlurEnabled,
-				connectZooms,
-				zoomMotionBlur,
-				borderRadius,
-				padding,
-				cropRegion,
-				zoomRegions,
-				trimRegions,
-				speedRegions,
-				annotationRegions,
-				aspectRatio,
-				exportQuality,
-				exportFormat,
-				gifFrameRate,
-				gifLoop,
-				gifSizePreset,
-				transcriptSegments,
-				captionSettings,
-				cursorClickPulseSettings,
-				keystrokeOverlaySettings,
-			}),
-		);
+	const buildEditorState = useCallback((): ProjectEditorState => {
+		return {
+			wallpaper,
+			shadowIntensity,
+			showBlur,
+			motionBlurEnabled,
+			connectZooms,
+			zoomMotionBlur,
+			borderRadius,
+			padding,
+			cropRegion,
+			zoomRegions,
+			trimRegions,
+			speedRegions,
+			annotationRegions,
+			aspectRatio,
+			exportQuality,
+			exportFormat,
+			gifFrameRate,
+			gifLoop,
+			gifSizePreset,
+			transcriptSegments,
+			captionSettings,
+			cursorClickPulseSettings,
+			keystrokeOverlaySettings,
+		};
 	}, [
-		videoPath,
-		videoSourcePath,
 		wallpaper,
 		shadowIntensity,
 		showBlur,
@@ -316,6 +233,136 @@ export default function VideoEditor() {
 		cursorClickPulseSettings,
 		keystrokeOverlaySettings,
 	]);
+
+	const applyEditorState = useCallback((editor: ProjectEditorState) => {
+		setWallpaper(editor.wallpaper);
+		setShadowIntensity(editor.shadowIntensity);
+		setShowBlur(editor.showBlur);
+		setMotionBlurEnabled(editor.motionBlurEnabled);
+		setConnectZooms(editor.connectZooms);
+		setZoomMotionBlur(editor.zoomMotionBlur);
+		setBorderRadius(editor.borderRadius);
+		setPadding(editor.padding);
+		setCropRegion(editor.cropRegion);
+		setZoomRegions(editor.zoomRegions);
+		setTrimRegions(editor.trimRegions);
+		setSpeedRegions(editor.speedRegions);
+		setAnnotationRegions(editor.annotationRegions);
+		setAspectRatio(editor.aspectRatio);
+		setExportQuality(editor.exportQuality);
+		setExportFormat(editor.exportFormat);
+		setGifFrameRate(editor.gifFrameRate);
+		setGifLoop(editor.gifLoop);
+		setGifSizePreset(editor.gifSizePreset);
+		setTranscriptSegments(editor.transcriptSegments);
+		setCaptionSettings(editor.captionSettings);
+		setCursorClickPulseSettings(editor.cursorClickPulseSettings);
+		setKeystrokeOverlaySettings(editor.keystrokeOverlaySettings);
+
+		setSelectedZoomId(null);
+		setSelectedTrimId(null);
+		setSelectedSpeedId(null);
+		setSelectedAnnotationId(null);
+
+		nextZoomIdRef.current = deriveNextId(
+			"zoom",
+			editor.zoomRegions.map((region) => region.id),
+		);
+		nextTrimIdRef.current = deriveNextId(
+			"trim",
+			editor.trimRegions.map((region) => region.id),
+		);
+		nextSpeedIdRef.current = deriveNextId(
+			"speed",
+			editor.speedRegions.map((region) => region.id),
+		);
+		nextAnnotationIdRef.current = deriveNextId(
+			"annotation",
+			editor.annotationRegions.map((region) => region.id),
+		);
+		nextAnnotationZIndexRef.current =
+			editor.annotationRegions.reduce((max, region) => Math.max(max, region.zIndex), 0) + 1;
+	}, []);
+
+	const applyLoadedProject = useCallback(async (candidate: unknown, path?: string | null) => {
+		if (!validateProjectData(candidate)) {
+			return false;
+		}
+
+		const project = candidate;
+		const sourcePath = project.videoPath;
+		const normalizedEditor = normalizeProjectEditor(project.editor);
+
+		try {
+			videoPlaybackRef.current?.pause();
+		} catch {
+			// no-op
+		}
+		setIsPlaying(false);
+		setCurrentTime(0);
+		setDuration(0);
+
+		setError(null);
+		setVideoSourcePath(sourcePath);
+		setVideoPath(toFileUrl(sourcePath));
+		setCurrentProjectPath(path ?? null);
+		applyEditorState(normalizedEditor);
+		setTranscriptSourceLabel(
+			normalizedEditor.transcriptSegments.length > 0 ? "Saved project transcript" : null,
+		);
+		setTranscriptStatus(normalizedEditor.transcriptSegments.length > 0 ? "ready" : "idle");
+		setTranscriptError(null);
+
+		setLastSavedSnapshot(JSON.stringify(createProjectData(sourcePath, normalizedEditor)));
+		const restoredSnapshot = JSON.stringify(normalizedEditor);
+		lastHistorySnapshotRef.current = restoredSnapshot;
+		setUndoStack([]);
+		setRedoStack([]);
+		return true;
+	}, [applyEditorState]);
+
+	const currentProjectSnapshot = useMemo(() => {
+		const sourcePath = videoSourcePath ?? (videoPath ? fromFileUrl(videoPath) : null);
+		if (!sourcePath) {
+			return null;
+		}
+		return JSON.stringify(createProjectData(sourcePath, buildEditorState()));
+	}, [
+		videoSourcePath,
+		videoPath,
+		buildEditorState,
+	]);
+
+	const currentEditorSnapshot = useMemo(() => JSON.stringify(buildEditorState()), [buildEditorState]);
+
+	useEffect(() => {
+		if (loading) {
+			return;
+		}
+
+		if (isRestoringHistoryRef.current) {
+			lastHistorySnapshotRef.current = currentEditorSnapshot;
+			isRestoringHistoryRef.current = false;
+			return;
+		}
+
+		const previousSnapshot = lastHistorySnapshotRef.current;
+		if (previousSnapshot === null) {
+			lastHistorySnapshotRef.current = currentEditorSnapshot;
+			return;
+		}
+
+		if (previousSnapshot === currentEditorSnapshot) {
+			return;
+		}
+
+		setUndoStack((prev) => {
+			const next = [...prev, previousSnapshot];
+			return next.length > 75 ? next.slice(next.length - 75) : next;
+		});
+		setRedoStack([]);
+		lastHistorySnapshotRef.current = currentEditorSnapshot;
+	}, [currentEditorSnapshot, loading]);
 
 	const hasUnsavedChanges = Boolean(
 		currentProjectPath &&
@@ -1258,6 +1305,34 @@ export default function VideoEditor() {
 		[],
 	);
 
+	const handleUndo = useCallback(() => {
+		if (undoStack.length === 0) {
+			return;
+		}
+
+		const previousSnapshot = undoStack[undoStack.length - 1]!;
+		const previousState = normalizeProjectEditor(JSON.parse(previousSnapshot) as ProjectEditorState);
+		isRestoringHistoryRef.current = true;
+		setUndoStack((prev) => prev.slice(0, -1));
+		setRedoStack((prev) => [...prev, currentEditorSnapshot]);
+		applyEditorState(previousState);
+		toast.success("Undid last change");
+	}, [undoStack, currentEditorSnapshot, applyEditorState]);
+
+	const handleRedo = useCallback(() => {
+		if (redoStack.length === 0) {
+			return;
+		}
+
+		const nextSnapshot = redoStack[redoStack.length - 1]!;
+		const nextState = normalizeProjectEditor(JSON.parse(nextSnapshot) as ProjectEditorState);
+		isRestoringHistoryRef.current = true;
+		setRedoStack((prev) => prev.slice(0, -1));
+		setUndoStack((prev) => [...prev, currentEditorSnapshot]);
+		applyEditorState(nextState);
+		toast.success("Redid change");
+	}, [redoStack, currentEditorSnapshot, applyEditorState]);
+
 	const handlePolishDemo = useCallback(() => {
 		const plan = buildDemoPolishPlan({
 			cursorTelemetry,
@@ -1541,9 +1616,26 @@ export default function VideoEditor() {
 	// Global Tab prevention
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement | null;
+			const isEditableTarget =
+				target instanceof HTMLInputElement ||
+				target instanceof HTMLTextAreaElement ||
+				target?.isContentEditable === true;
+
+			const primaryModifier = isMac ? e.metaKey : e.ctrlKey;
+			if (primaryModifier && e.key.toLowerCase() === "z" && !isEditableTarget) {
+				e.preventDefault();
+				if (e.shiftKey) {
+					handleRedo();
+				} else {
+					handleUndo();
+				}
+				return;
+			}
+
 			if (e.key === "Tab") {
 				// Allow tab only in inputs/textareas
-				if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+				if (isEditableTarget) {
 					return;
 				}
 				e.preventDefault();
@@ -1551,7 +1643,7 @@ export default function VideoEditor() {
 
 			if (matchesShortcut(e, shortcuts.playPause, isMac)) {
 				// Allow space only in inputs/textareas
-				if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+				if (isEditableTarget) {
 					return;
 				}
 				e.preventDefault();
@@ -1569,7 +1661,7 @@ export default function VideoEditor() {
 
 		window.addEventListener("keydown", handleKeyDown, { capture: true });
 		return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
-	}, [shortcuts, isMac]);
+	}, [shortcuts, isMac, handleUndo, handleRedo]);
 
 	useEffect(() => {
 		if (selectedZoomId && !zoomRegions.some((region) => region.id === selectedZoomId)) {
@@ -1986,6 +2078,28 @@ export default function VideoEditor() {
 		: aiConfig?.enabled
 			? "border-amber-500/20 bg-amber-500/10 text-amber-300"
 			: "border-white/10 bg-white/5 text-slate-400";
+	const previewWallpaper = showOriginalPreview ? "#000000" : wallpaper;
+	const previewZoomRegions = showOriginalPreview ? [] : zoomRegions;
+	const previewAnnotationRegions = showOriginalPreview ? [] : annotationRegions;
+	const previewTranscriptSegments = showOriginalPreview ? [] : transcriptSegments;
+	const previewCaptionSettings = showOriginalPreview
+		? { ...captionSettings, showInPreview: false }
+		: captionSettings;
+	const previewCursorClickPulseSettings = showOriginalPreview
+		? { ...cursorClickPulseSettings, showInPreview: false }
+		: cursorClickPulseSettings;
+	const previewKeystrokeOverlaySettings = showOriginalPreview
+		? { ...keystrokeOverlaySettings, showInPreview: false }
+		: keystrokeOverlaySettings;
+	const previewCropRegion = showOriginalPreview ? DEFAULT_CROP_REGION : cropRegion;
+	const previewPadding = showOriginalPreview ? 0 : padding;
+	const previewBorderRadius = showOriginalPreview ? 0 : borderRadius;
+	const previewShowShadow = showOriginalPreview ? false : shadowIntensity > 0;
+	const previewShadowIntensity = showOriginalPreview ? 0 : shadowIntensity;
+	const previewShowBlur = showOriginalPreview ? false : showBlur;
+	const previewMotionBlurEnabled = showOriginalPreview ? false : motionBlurEnabled;
+	const previewZoomMotionBlur = showOriginalPreview ? 0 : zoomMotionBlur;
+	const previewConnectZooms = showOriginalPreview ? false : connectZooms;
 
 	return (
 		<div className="flex flex-col h-screen bg-[#09090b] text-slate-200 overflow-hidden selection:bg-[#34B27B]/30">
@@ -1998,11 +2112,43 @@ export default function VideoEditor() {
 					className="flex items-center gap-2"
 					style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
 				>
+					<button
+						type="button"
+						onClick={handleUndo}
+						disabled={undoStack.length === 0}
+						className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+						aria-label="Undo"
+						title="Undo"
+					>
+						<Undo2 className="h-3.5 w-3.5" />
+					</button>
+					<button
+						type="button"
+						onClick={handleRedo}
+						disabled={redoStack.length === 0}
+						className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+						aria-label="Redo"
+						title="Redo"
+					>
+						<Redo2 className="h-3.5 w-3.5" />
+					</button>
 					<span
 						className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] ${aiStatusClassName}`}
 					>
 						AI {aiConfigStatus}
 					</span>
+					<button
+						type="button"
+						onClick={() => setShowOriginalPreview((current) => !current)}
+						className={`inline-flex h-8 items-center gap-2 rounded-full border px-3 text-[11px] font-medium transition-colors ${
+							showOriginalPreview
+								? "border-sky-500/30 bg-sky-500/10 text-sky-200 hover:bg-sky-500/15"
+								: "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+						}`}
+					>
+						<FlipHorizontal2 className="h-3.5 w-3.5" />
+						{showOriginalPreview ? "Show Polished" : "Compare Original"}
+					</button>
 					<button
 						type="button"
 						onClick={() => setShowAISettings(true)}
@@ -2014,7 +2160,7 @@ export default function VideoEditor() {
 				</div>
 			</div>
 
-			<div className="flex-1 p-5 gap-4 flex min-h-0 relative">
+			<div className="relative flex min-h-0 flex-1 gap-4 p-5">
 				{/* Left Column - Video & Timeline */}
 				<div className="flex-[7] flex flex-col gap-3 min-w-0 h-full">
 					<PanelGroup direction="vertical" className="gap-3">
@@ -2047,35 +2193,46 @@ export default function VideoEditor() {
 											currentTime={currentTime}
 											onPlayStateChange={setIsPlaying}
 											onError={setError}
-											wallpaper={wallpaper}
-											zoomRegions={zoomRegions}
+											wallpaper={previewWallpaper}
+											zoomRegions={previewZoomRegions}
 											selectedZoomId={selectedZoomId}
 											onSelectZoom={handleSelectZoom}
 											onZoomFocusChange={handleZoomFocusChange}
 											isPlaying={isPlaying}
-											showShadow={shadowIntensity > 0}
-											shadowIntensity={shadowIntensity}
-											showBlur={showBlur}
-											motionBlurEnabled={motionBlurEnabled}
-											zoomMotionBlur={zoomMotionBlur}
-											connectZooms={connectZooms}
-											borderRadius={borderRadius}
-											padding={padding}
-											cropRegion={cropRegion}
+											showShadow={previewShowShadow}
+											shadowIntensity={previewShadowIntensity}
+											showBlur={previewShowBlur}
+											motionBlurEnabled={previewMotionBlurEnabled}
+											zoomMotionBlur={previewZoomMotionBlur}
+											connectZooms={previewConnectZooms}
+											borderRadius={previewBorderRadius}
+											padding={previewPadding}
+											cropRegion={previewCropRegion}
 											trimRegions={trimRegions}
 											speedRegions={speedRegions}
-											annotationRegions={annotationRegions}
-											transcriptSegments={transcriptSegments}
-											captionSettings={captionSettings}
+											annotationRegions={previewAnnotationRegions}
+											transcriptSegments={previewTranscriptSegments}
+											captionSettings={previewCaptionSettings}
 											cursorTelemetry={cursorTelemetry}
-											cursorClickPulseSettings={cursorClickPulseSettings}
+											cursorClickPulseSettings={previewCursorClickPulseSettings}
 											keystrokeTelemetry={keystrokeTelemetry}
-											keystrokeOverlaySettings={keystrokeOverlaySettings}
+											keystrokeOverlaySettings={previewKeystrokeOverlaySettings}
 											selectedAnnotationId={selectedAnnotationId}
 											onSelectAnnotation={handleSelectAnnotation}
 											onAnnotationPositionChange={handleAnnotationPositionChange}
 											onAnnotationSizeChange={handleAnnotationSizeChange}
 										/>
+										<div className="pointer-events-none absolute left-3 top-3 z-20">
+											<span
+												className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] ${
+													showOriginalPreview
+														? "border-sky-500/25 bg-sky-500/10 text-sky-200"
+														: "border-[#34B27B]/25 bg-[#34B27B]/10 text-[#7fe3b0]"
+												}`}
+											>
+												{showOriginalPreview ? "Original Preview" : "Polished Preview"}
+											</span>
+										</div>
 									</div>
 								</div>
 								{/* Playback controls */}
@@ -2147,82 +2304,83 @@ export default function VideoEditor() {
 				</div>
 
 				{/* Right section: settings panel */}
-				<SettingsPanel
-					selected={wallpaper}
-					onWallpaperChange={setWallpaper}
-					selectedZoomDepth={
-						selectedZoomId ? zoomRegions.find((z) => z.id === selectedZoomId)?.depth : null
-					}
-					onZoomDepthChange={(depth) => selectedZoomId && handleZoomDepthChange(depth)}
-					selectedZoomId={selectedZoomId}
-					onZoomDelete={handleZoomDelete}
-					selectedTrimId={selectedTrimId}
-					onTrimDelete={handleTrimDelete}
-					shadowIntensity={shadowIntensity}
-					onShadowChange={setShadowIntensity}
-					showBlur={showBlur}
-					onBlurChange={setShowBlur}
-					motionBlurEnabled={motionBlurEnabled}
-					onMotionBlurChange={setMotionBlurEnabled}
-					connectZooms={connectZooms}
-					onConnectZoomsChange={setConnectZooms}
-					zoomMotionBlur={zoomMotionBlur}
-					onZoomMotionBlurChange={setZoomMotionBlur}
-					borderRadius={borderRadius}
-					onBorderRadiusChange={setBorderRadius}
-					padding={padding}
-					onPaddingChange={setPadding}
-					cropRegion={cropRegion}
-					onCropChange={setCropRegion}
-					aspectRatio={aspectRatio}
-					videoElement={videoPlaybackRef.current?.video || null}
-					exportQuality={exportQuality}
-					onExportQualityChange={setExportQuality}
-					exportFormat={exportFormat}
-					onExportFormatChange={setExportFormat}
-					gifFrameRate={gifFrameRate}
-					onGifFrameRateChange={setGifFrameRate}
-					gifLoop={gifLoop}
-					onGifLoopChange={setGifLoop}
-					gifSizePreset={gifSizePreset}
-					onGifSizePresetChange={setGifSizePreset}
-					gifOutputDimensions={calculateOutputDimensions(
-						videoPlaybackRef.current?.video?.videoWidth || 1920,
-						videoPlaybackRef.current?.video?.videoHeight || 1080,
-						gifSizePreset,
-						GIF_SIZE_PRESETS,
-					)}
-					onExport={handleOpenExportDialog}
-					captionSettings={captionSettings}
-					onCaptionSettingsChange={handleCaptionSettingsChange}
-					hasTranscript={transcriptSegments.length > 0}
-					cursorClickPulseSettings={cursorClickPulseSettings}
-					onCursorClickPulseSettingsChange={handleCursorClickPulseSettingsChange}
-					hasClickTelemetry={hasClickTelemetry}
-					keystrokeOverlaySettings={keystrokeOverlaySettings}
-					onKeystrokeOverlaySettingsChange={handleKeystrokeOverlaySettingsChange}
-					hasKeystrokes={keystrokeTelemetry.length > 0}
-					selectedAnnotationId={selectedAnnotationId}
-					annotationRegions={annotationRegions}
-					onAnnotationContentChange={handleAnnotationContentChange}
-					onAnnotationTypeChange={handleAnnotationTypeChange}
-					onAnnotationStyleChange={handleAnnotationStyleChange}
-					onAnnotationFigureDataChange={(id, data) =>
-						handleAnnotationFigureDataChange(id, data as FigureData)
-					}
-					onAnnotationDelete={handleAnnotationDelete}
-					onSaveProject={handleSaveProject}
-					onLoadProject={handleLoadProject}
-					selectedSpeedId={selectedSpeedId}
-					selectedSpeedValue={
-						selectedSpeedId
-							? (speedRegions.find((r) => r.id === selectedSpeedId)?.speed ?? null)
-							: null
-					}
-					onSpeedChange={handleSpeedChange}
-					onSpeedDelete={handleSpeedDelete}
-					smartDemoSlot={
-						<SmartDemoPanel
+				<div className="flex min-h-0 flex-[2] min-w-0">
+					<SettingsPanel
+						selected={wallpaper}
+						onWallpaperChange={setWallpaper}
+						selectedZoomDepth={
+							selectedZoomId ? zoomRegions.find((z) => z.id === selectedZoomId)?.depth : null
+						}
+						onZoomDepthChange={(depth) => selectedZoomId && handleZoomDepthChange(depth)}
+						selectedZoomId={selectedZoomId}
+						onZoomDelete={handleZoomDelete}
+						selectedTrimId={selectedTrimId}
+						onTrimDelete={handleTrimDelete}
+						shadowIntensity={shadowIntensity}
+						onShadowChange={setShadowIntensity}
+						showBlur={showBlur}
+						onBlurChange={setShowBlur}
+						motionBlurEnabled={motionBlurEnabled}
+						onMotionBlurChange={setMotionBlurEnabled}
+						connectZooms={connectZooms}
+						onConnectZoomsChange={setConnectZooms}
+						zoomMotionBlur={zoomMotionBlur}
+						onZoomMotionBlurChange={setZoomMotionBlur}
+						borderRadius={borderRadius}
+						onBorderRadiusChange={setBorderRadius}
+						padding={padding}
+						onPaddingChange={setPadding}
+						cropRegion={cropRegion}
+						onCropChange={setCropRegion}
+						aspectRatio={aspectRatio}
+						videoElement={videoPlaybackRef.current?.video || null}
+						exportQuality={exportQuality}
+						onExportQualityChange={setExportQuality}
+						exportFormat={exportFormat}
+						onExportFormatChange={setExportFormat}
+						gifFrameRate={gifFrameRate}
+						onGifFrameRateChange={setGifFrameRate}
+						gifLoop={gifLoop}
+						onGifLoopChange={setGifLoop}
+						gifSizePreset={gifSizePreset}
+						onGifSizePresetChange={setGifSizePreset}
+						gifOutputDimensions={calculateOutputDimensions(
+							videoPlaybackRef.current?.video?.videoWidth || 1920,
+							videoPlaybackRef.current?.video?.videoHeight || 1080,
+							gifSizePreset,
+							GIF_SIZE_PRESETS,
+						)}
+						onExport={handleOpenExportDialog}
+						captionSettings={captionSettings}
+						onCaptionSettingsChange={handleCaptionSettingsChange}
+						hasTranscript={transcriptSegments.length > 0}
+						cursorClickPulseSettings={cursorClickPulseSettings}
+						onCursorClickPulseSettingsChange={handleCursorClickPulseSettingsChange}
+						hasClickTelemetry={hasClickTelemetry}
+						keystrokeOverlaySettings={keystrokeOverlaySettings}
+						onKeystrokeOverlaySettingsChange={handleKeystrokeOverlaySettingsChange}
+						hasKeystrokes={keystrokeTelemetry.length > 0}
+						selectedAnnotationId={selectedAnnotationId}
+						annotationRegions={annotationRegions}
+						onAnnotationContentChange={handleAnnotationContentChange}
+						onAnnotationTypeChange={handleAnnotationTypeChange}
+						onAnnotationStyleChange={handleAnnotationStyleChange}
+						onAnnotationFigureDataChange={(id, data) =>
+							handleAnnotationFigureDataChange(id, data as FigureData)
+						}
+						onAnnotationDelete={handleAnnotationDelete}
+						onSaveProject={handleSaveProject}
+						onLoadProject={handleLoadProject}
+						selectedSpeedId={selectedSpeedId}
+						selectedSpeedValue={
+							selectedSpeedId
+								? (speedRegions.find((r) => r.id === selectedSpeedId)?.speed ?? null)
+								: null
+						}
+						onSpeedChange={handleSpeedChange}
+						onSpeedDelete={handleSpeedDelete}
+						smartDemoSlot={
+							<SmartDemoPanel
 							cursorTelemetry={cursorTelemetry}
 							duration={duration}
 							isAutoMode={smartDemoAutoMode}
@@ -2245,7 +2403,6 @@ export default function VideoEditor() {
 							transcriptWarnings={transcriptAnalysis.warnings}
 							localSpeechAnchorCount={transcriptAnalysis.speechAnchors.length}
 							localFocusMomentCount={transcriptAnalysis.focusMoments.length}
-							onAISettingsClick={() => setShowAISettings(true)}
 							onAIPromptChange={setAIPrompt}
 							onImportTranscript={handleImportTranscript}
 							onTranscribeAudio={handleTranscribeAudio}
@@ -2265,9 +2422,10 @@ export default function VideoEditor() {
 							onApplyTrimRegions={handleSmartDemoApplyTrim}
 							onApplyPolishDemo={handlePolishDemo}
 							onSeekToTime={handleSeek}
-						/>
-					}
-				/>
+							/>
+						}
+					/>
+				</div>
 			</div>
 
 			<Toaster theme="dark" className="pointer-events-auto" />
