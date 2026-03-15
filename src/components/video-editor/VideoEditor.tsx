@@ -9,7 +9,7 @@ import {
 	type TranscriptSegment,
 } from "@shared/ai";
 import type { Span } from "dnd-timeline";
-import { FlipHorizontal2, Redo2, Sparkles, Undo2 } from "lucide-react";
+import { FlipHorizontal2, Redo2, Sparkles, Undo2, Wand2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { toast } from "sonner";
@@ -49,6 +49,7 @@ import {
 	WALLPAPER_PATHS,
 } from "./projectPersistence";
 import { SettingsPanel } from "./SettingsPanel";
+import { SmartDemoSheet } from "./SmartDemoSheet";
 import { TranscriptReviewDialog } from "./TranscriptReviewDialog";
 import TimelineEditor from "./timeline/TimelineEditor";
 import {
@@ -130,6 +131,7 @@ export default function VideoEditor() {
 
 	const [showTranscriptReview, setShowTranscriptReview] = useState(false);
 	const [showAISettings, setShowAISettings] = useState(false);
+	const [showSmartDemoSheet, setShowSmartDemoSheet] = useState(false);
 	const [isSavingAIConfig, setIsSavingAIConfig] = useState(false);
 	const [isTestingAIConnection, setIsTestingAIConnection] = useState(false);
 	const [selectedZoomId, setSelectedZoomId] = useState<string | null>(null);
@@ -1982,6 +1984,18 @@ export default function VideoEditor() {
 					</button>
 					<button
 						type="button"
+						onClick={() => setShowSmartDemoSheet(true)}
+						className={`inline-flex h-8 items-center gap-2 rounded-full border px-3 text-[11px] font-medium transition-colors ${
+							showSmartDemoSheet
+								? "border-purple-500/40 bg-purple-500/15 text-purple-200 hover:bg-purple-500/20"
+								: "border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
+						}`}
+					>
+						<Wand2 className="h-3.5 w-3.5 text-purple-300" />
+						Smart Demo
+					</button>
+					<button
+						type="button"
 						onClick={() => setShowAISettings(true)}
 						className="inline-flex h-8 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-[11px] font-medium text-slate-200 transition-colors hover:bg-white/10"
 					>
@@ -2212,31 +2226,6 @@ export default function VideoEditor() {
 						}
 						onSpeedChange={handleSpeedChange}
 						onSpeedDelete={handleSpeedDelete}
-						smartDemoSlot={
-							<SmartDemoPanel
-								cursorTelemetry={cursorTelemetry}
-								duration={duration}
-								isAutoMode={smartDemoAutoMode}
-								videoPath={videoPath}
-								transcriptSegments={transcriptSegments}
-								transcriptStatus={transcriptStatus}
-								transcriptError={transcriptError}
-								captionSettings={captionSettings}
-								transcriptionConfig={transcriptionConfig}
-								transcriptionOptions={transcriptionOptions}
-								onImportTranscript={handleImportTranscript}
-								onTranscribeAudio={handleTranscribeAudio}
-								onSaveTranscriptionConfig={handleSaveTranscriptionConfig}
-								onCaptionSettingsChange={handleCaptionSettingsChange}
-								onClearTranscript={handleClearTranscript}
-								onReviewTranscript={() => setShowTranscriptReview(true)}
-								onApplyZoomRegions={handleSmartDemoApplyZoom}
-								onApplyAnnotations={handleSmartDemoApplyAnnotations}
-								onApplyTrimRegions={handleSmartDemoApplyTrim}
-								onApplyPolishDemo={handlePolishDemo}
-								onSeekToTime={handleSeek}
-							/>
-						}
 					/>
 				</div>
 			</div>
@@ -2274,6 +2263,32 @@ export default function VideoEditor() {
 				sourceLabel={transcriptSourceLabel}
 				onSave={handleSaveTranscriptEdits}
 			/>
+
+			<SmartDemoSheet open={showSmartDemoSheet} onClose={() => setShowSmartDemoSheet(false)}>
+				<SmartDemoPanel
+					cursorTelemetry={cursorTelemetry}
+					duration={duration}
+					isAutoMode={smartDemoAutoMode}
+					videoPath={videoPath}
+					transcriptSegments={transcriptSegments}
+					transcriptStatus={transcriptStatus}
+					transcriptError={transcriptError}
+					captionSettings={captionSettings}
+					transcriptionConfig={transcriptionConfig}
+					transcriptionOptions={transcriptionOptions}
+					onImportTranscript={handleImportTranscript}
+					onTranscribeAudio={handleTranscribeAudio}
+					onSaveTranscriptionConfig={handleSaveTranscriptionConfig}
+					onCaptionSettingsChange={handleCaptionSettingsChange}
+					onClearTranscript={handleClearTranscript}
+					onReviewTranscript={() => setShowTranscriptReview(true)}
+					onApplyZoomRegions={handleSmartDemoApplyZoom}
+					onApplyAnnotations={handleSmartDemoApplyAnnotations}
+					onApplyTrimRegions={handleSmartDemoApplyTrim}
+					onApplyPolishDemo={handlePolishDemo}
+					onSeekToTime={handleSeek}
+				/>
+			</SmartDemoSheet>
 		</div>
 	);
 }
