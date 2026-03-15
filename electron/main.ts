@@ -46,7 +46,7 @@ let tray: Tray | null = null;
 let selectedSourceName = "";
 
 // Tray Icons
-const defaultTrayIcon = getTrayIcon("openscreen.png");
+const defaultTrayIcon = getTrayIcon("smart-screen.png");
 const recordingTrayIcon = getTrayIcon("rec-button.png");
 
 function createWindow() {

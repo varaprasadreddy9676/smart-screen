@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/openscreen.png" alt="Smart Screen" width="72" />
+  <img src="public/smart-screen.png" alt="Smart Screen" width="72" />
 </p>
 
 <h1 align="center">Smart Screen</h1>
