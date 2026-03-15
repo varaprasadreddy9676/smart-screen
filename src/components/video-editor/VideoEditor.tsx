@@ -2009,7 +2009,7 @@ export default function VideoEditor() {
 
 			<div className="relative flex min-h-0 flex-1 gap-4 p-5">
 				{/* Left Column - Video & Timeline */}
-				<div className="flex-[7] flex flex-col gap-3 min-w-0 h-full">
+				<div className="flex-1 flex flex-col gap-3 min-w-0 h-full">
 					<PanelGroup direction="vertical" className="gap-3">
 						{/* Top section: video preview and controls */}
 						<Panel defaultSize={70} minSize={40}>
@@ -2151,7 +2151,7 @@ export default function VideoEditor() {
 				</div>
 
 				{/* Right section: settings panel */}
-				<div className="flex min-h-0 flex-[2] min-w-0">
+				<div className="flex min-h-0 w-[300px] shrink-0">
 					<SettingsPanel
 						selected={wallpaper}
 						onWallpaperChange={setWallpaper}
