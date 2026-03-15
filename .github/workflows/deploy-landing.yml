@@ -31,9 +31,10 @@ jobs:
 
       - name: Build landing site
         run: |
-          mkdir -p _site/public
-          cp landing/index.html _site/index.html
-          cp -r public/landing _site/public/landing
+          mkdir -p _site/public/landing
+          # Fix asset paths: ../public/ → public/ (index.html moves from landing/ to root)
+          sed 's|\.\./public/|public/|g' landing/index.html > _site/index.html
+          cp -r public/landing/. _site/public/landing/
           cp public/smart-screen.png _site/public/smart-screen.png
 
       - name: Upload Pages artifact
