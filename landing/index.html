@@ -8,12 +8,12 @@
   <meta property="og:title" content="Smart Screen" />
   <meta property="og:description" content="Turn raw recordings into polished walkthroughs with click-aware editing, captions, and optional AI refinement." />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/smart-screen.png" />
+  <meta property="og:image" content="../public/landing/editing-screen.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Smart Screen" />
   <meta name="twitter:description" content="Turn raw recordings into polished walkthroughs with click-aware editing, captions, and optional AI refinement." />
-  <meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/smart-screen.png" />
-  <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/smart-screen.png" />
+  <meta name="twitter:image" content="../public/landing/editing-screen.png" />
+  <link rel="icon" type="image/png" href="../public/smart-screen.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -422,7 +422,11 @@
       50%       { transform: translateY(-10px); }
     }
 
-    .ss-frame img { width: 100%; display: block; }
+    .ss-frame img,
+    .ss-frame video {
+      width: 100%;
+      display: block;
+    }
 
     .hero-glass {
       position: absolute;
@@ -818,7 +822,11 @@
       will-change: transform;
     }
     .gallery-item:hover { border-color: var(--border-hi); transform: translateY(-3px); }
-    .gallery-item img { width: 100%; display: block; }
+    .gallery-item img,
+    .gallery-item video {
+      width: 100%;
+      display: block;
+    }
 
     .gallery-cap {
       padding: 12px 16px;
@@ -854,35 +862,18 @@
 
     .vid-body {
       aspect-ratio: 16/9;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
       background:
         radial-gradient(ellipse at 50% 40%, rgba(52,178,123,0.07) 0%, transparent 60%),
         linear-gradient(180deg, #09091a 0%, #0b0b18 100%);
-      cursor: pointer;
       position: relative;
     }
-
-    .play-ring {
-      width: 68px; height: 68px;
-      border-radius: 50%;
-      background: var(--green);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 0 10px rgba(52,178,123,0.13);
-      transition: transform 0.22s, box-shadow 0.22s;
+    .vid-body video {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      background: #06060d;
     }
-    .vid-body:hover .play-ring {
-      transform: scale(1.1);
-      box-shadow: 0 0 0 16px rgba(52,178,123,0.14);
-    }
-
-    .vid-label { font-size: 14px; color: var(--text-2); font-family: var(--mono); }
-    .vid-sub   { font-size: 11px; color: var(--text-3); font-family: var(--mono); }
 
     .vid-bar {
       padding: 12px 20px;
@@ -1063,7 +1054,7 @@
 <nav>
   <a href="#" class="nav-logo">
     <div class="nav-icon">
-      <img src="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/smart-screen.png" alt="Smart Screen logo" />
+      <img src="../public/smart-screen.png" alt="Smart Screen logo" />
     </div>
     Smart Screen
   </a>
@@ -1139,7 +1130,9 @@
     <div class="hero-vis" data-r data-d="2">
       <div class="hero-stack" id="heroStack">
       <div class="ss-frame">
-        <img src="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/preview.png" alt="Smart Screen — timeline editor" />
+        <video autoplay muted loop playsinline poster="../public/landing/editing-screen.png" aria-label="Smart Screen demo preview">
+          <source src="../public/landing/demo.mp4" type="video/mp4" />
+        </video>
         <div class="ss-badges">
           <span class="ssb ssb-g">✦ Smart Screen applied</span>
           <span class="ssb ssb-c">CC captions in timeline</span>
@@ -1228,7 +1221,7 @@
         </div>
       </div>
       <div class="feat-img" data-r data-d="1" data-parallax data-speed="0.12">
-        <img src="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/preview4.png" alt="Video editor with timeline and native telemetry" />
+        <img src="../public/landing/landingoptions.png" alt="Smart Screen launch controls with streamlined recording options" />
       </div>
     </div>
   </div>
@@ -1250,7 +1243,7 @@
         </div>
       </div>
       <div class="feat-img" data-r data-d="1" data-parallax data-speed="0.12">
-        <img src="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/preview.png" alt="Timeline editor showing CC captions track" />
+        <img src="../public/landing/caption-transcript.png" alt="Transcript and caption editing interface inside Smart Screen" />
       </div>
     </div>
   </div>
@@ -1272,7 +1265,7 @@
         </div>
       </div>
       <div class="feat-img" data-r data-d="1" data-parallax data-speed="0.12">
-        <img src="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/preview2.png" alt="Settings panel with zoom and export controls" />
+        <img src="../public/landing/smart-screen-options.png" alt="Smart Screen options panel with smart polish controls" />
       </div>
     </div>
   </div>
@@ -1294,7 +1287,7 @@
         </div>
       </div>
       <div class="feat-img" data-r data-d="1" data-parallax data-speed="0.12">
-        <img src="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/preview3.png" alt="Recording HUD with source selection" />
+        <img src="../public/landing/aioptions.png" alt="AI settings and provider options inside Smart Screen" />
       </div>
     </div>
   </div>
@@ -1396,28 +1389,28 @@
   </div>
   <div class="gallery-grid">
     <div class="gallery-item" data-r data-parallax data-speed="0.1">
-      <img src="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/preview.png" alt="Timeline editor with zoom and captions tracks" />
+      <img src="../public/landing/editing-screen.png" alt="Smart Screen timeline editor with zoom and captions tracks" />
       <div class="gallery-cap">
         <span class="gc-dot" style="background:var(--green)"></span>
         Timeline editor — zoom, trim, CC, and speed tracks
       </div>
     </div>
     <div class="gallery-item" data-r data-d="1" data-parallax data-speed="0.12">
-      <img src="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/preview2.png" alt="Settings panel with zoom level and export controls" />
+      <img src="../public/landing/smart-screen-options.png" alt="Smart Screen options panel with export and polish controls" />
       <div class="gallery-cap">
         <span class="gc-dot" style="background:var(--cyan)"></span>
         Settings panel — zoom depth, effects, wallpaper, export
       </div>
     </div>
     <div class="gallery-item" data-r data-d="2" data-parallax data-speed="0.1">
-      <img src="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/preview3.png" alt="Recording HUD with source selector" />
+      <img src="../public/landing/aioptions.png" alt="AI provider and model configuration in Smart Screen" />
       <div class="gallery-cap">
         <span class="gc-dot" style="background:var(--purple)"></span>
         Recording HUD — minimal, stays out of the way
       </div>
     </div>
     <div class="gallery-item" data-r data-d="3" data-parallax data-speed="0.12">
-      <img src="https://cdn.jsdelivr.net/gh/varaprasadreddy9676/smart-screen@main/public/preview4.png" alt="Video preview with smart demo analysis" />
+      <img src="../public/landing/caption-transcript.png" alt="Transcript-driven caption editing in Smart Screen" />
       <div class="gallery-cap">
         <span class="gc-dot" style="background:var(--amber)"></span>
         Video preview — Smart Screen zooms applied, captions visible
@@ -1427,7 +1420,7 @@
 </section>
 
 <!-- ══════════════════════════════════════════════════
-     VIDEO DEMO PLACEHOLDER
+     VIDEO DEMO
 ══════════════════════════════════════════════════ -->
 <section id="demo">
   <div class="demo-hd">
@@ -1438,15 +1431,13 @@
 
   <div class="vid-shell" data-r>
     <div class="vid-body">
-      <div class="play-ring">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="#000"><polygon points="6,4 20,12 6,20"/></svg>
-      </div>
-      <div class="vid-label">Host your demo video as a GitHub release asset</div>
-      <div class="vid-sub">Then replace this placeholder with the release-hosted MP4 URL</div>
+      <video controls playsinline preload="metadata" poster="../public/landing/editing-screen.png">
+        <source src="../public/landing/demo.mp4" type="video/mp4" />
+      </video>
     </div>
     <div class="vid-bar">
       <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-      demo-recording.mp4 · ~3 min · replace this placeholder with your actual demo
+      demo.mp4 · recorded with Smart Screen · captions, zooms, and polish flow included
     </div>
   </div>
 </section>
