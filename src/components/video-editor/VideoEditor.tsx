@@ -2099,6 +2099,13 @@ export default function VideoEditor() {
 											duration={duration}
 											onTogglePlayPause={togglePlayPause}
 											onSeek={handleSeek}
+											hasCaptions={transcriptSegments.length > 0}
+											showCaptions={captionSettings.showInPreview}
+											onToggleCaptions={() =>
+												handleCaptionSettingsChange({
+													showInPreview: !captionSettings.showInPreview,
+												})
+											}
 										/>
 									</div>
 								</div>

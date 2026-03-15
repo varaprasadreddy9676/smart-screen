@@ -31,6 +31,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import type {
 	AnnotationRegion,
@@ -405,11 +406,17 @@ export function SmartDemoPanel({
 					)}
 				{transcriptError && <p className="mt-2 text-[11px] text-red-300/70">{transcriptError}</p>}
 
-				{/* Caption toggles — shown once transcript is loaded */}
+				{/* Caption settings */}
 				{hasTranscript && (
-					<div className="mt-3 rounded-lg border border-white/8 bg-white/5 px-3 py-2.5">
-						<p className="mb-2 text-[11px] font-medium text-white/65">Captions</p>
-						<div className="flex flex-col gap-2">
+					<div className="mt-3 rounded-lg border border-white/8 bg-white/5 px-3 py-2.5 space-y-3">
+						<div className="flex items-center gap-2">
+							<span className="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold tracking-wide border border-white/20 bg-white/10 text-white/70">
+								CC
+							</span>
+							<p className="text-[11px] font-medium text-white/65">Subtitles / Captions</p>
+						</div>
+
+						<div className="space-y-1.5">
 							<div className="flex items-center justify-between">
 								<span className="text-[10px] text-white/50">Show in preview</span>
 								<Switch
@@ -429,12 +436,85 @@ export function SmartDemoPanel({
 								/>
 							</div>
 						</div>
+
+						<div className="space-y-3 pt-1 border-t border-white/8">
+							<div className="space-y-1.5">
+								<div className="flex items-center justify-between">
+									<span className="text-[10px] text-white/50">Caption size</span>
+									<span className="text-[10px] text-white/40 tabular-nums">
+										{captionSettings.fontSize}px
+									</span>
+								</div>
+								<Slider
+									min={16}
+									max={56}
+									step={2}
+									value={[captionSettings.fontSize]}
+									onValueChange={([v]) => onCaptionSettingsChange({ fontSize: v })}
+								/>
+							</div>
+
+							<div className="space-y-1.5">
+								<div className="flex items-center justify-between">
+									<span className="text-[10px] text-white/50">Bottom offset</span>
+									<span className="text-[10px] text-white/40 tabular-nums">
+										{captionSettings.bottomOffset}%
+									</span>
+								</div>
+								<Slider
+									min={2}
+									max={40}
+									step={1}
+									value={[captionSettings.bottomOffset]}
+									onValueChange={([v]) => onCaptionSettingsChange({ bottomOffset: v })}
+								/>
+							</div>
+
+							<div className="space-y-1.5">
+								<span className="text-[10px] text-white/50">Style preset</span>
+								<div className="flex gap-1.5 mt-1">
+									{CAPTION_PRESETS.map((preset) => (
+										<button
+											key={preset.label}
+											type="button"
+											title={preset.label}
+											onClick={() =>
+												onCaptionSettingsChange({
+													textColor: preset.textColor,
+													backgroundColor: preset.backgroundColor,
+												})
+											}
+											className={`flex-1 rounded py-1.5 text-[9px] font-semibold border transition-all ${
+												captionSettings.textColor === preset.textColor &&
+												captionSettings.backgroundColor === preset.backgroundColor
+													? "border-white/40 ring-1 ring-white/30"
+													: "border-white/10 hover:border-white/20"
+											}`}
+											style={{
+												color: preset.textColor,
+												backgroundColor: preset.backgroundColor,
+											}}
+										>
+											{preset.label}
+										</button>
+									))}
+								</div>
+							</div>
+						</div>
 					</div>
 				)}
 			</div>
 		</div>
 	);
 }
+
+// ── Caption presets ────────────────────────────────────────────────────────────
+
+const CAPTION_PRESETS = [
+	{ label: "Dark", textColor: "#ffffff", backgroundColor: "rgba(0,0,0,0.72)" },
+	{ label: "Light", textColor: "#000000", backgroundColor: "rgba(255,255,255,0.85)" },
+	{ label: "None", textColor: "#ffffff", backgroundColor: "transparent" },
+];
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 

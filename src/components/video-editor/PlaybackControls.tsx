@@ -8,6 +8,9 @@ interface PlaybackControlsProps {
 	duration: number;
 	onTogglePlayPause: () => void;
 	onSeek: (time: number) => void;
+	hasCaptions?: boolean;
+	showCaptions?: boolean;
+	onToggleCaptions?: () => void;
 }
 
 export default function PlaybackControls({
@@ -16,6 +19,9 @@ export default function PlaybackControls({
 	duration,
 	onTogglePlayPause,
 	onSeek,
+	hasCaptions = false,
+	showCaptions = false,
+	onToggleCaptions,
 }: PlaybackControlsProps) {
 	function formatTime(seconds: number) {
 		if (!isFinite(seconds) || isNaN(seconds) || seconds < 0) return "0:00";
@@ -84,6 +90,24 @@ export default function PlaybackControls({
 			<span className="text-[9px] font-medium text-slate-500 tabular-nums w-[30px]">
 				{formatTime(duration)}
 			</span>
+
+			{/* CC button — only visible when captions are available */}
+			{hasCaptions && onToggleCaptions && (
+				<button
+					type="button"
+					onClick={onToggleCaptions}
+					title={showCaptions ? "Hide captions" : "Show captions"}
+					aria-label={showCaptions ? "Hide captions" : "Show captions"}
+					className={cn(
+						"flex h-7 w-8 items-center justify-center rounded-md text-[10px] font-bold tracking-tight transition-all border",
+						showCaptions
+							? "border-white/30 bg-white text-black"
+							: "border-white/15 bg-white/8 text-white/50 hover:border-white/25 hover:text-white/80",
+					)}
+				>
+					CC
+				</button>
+			)}
 		</div>
 	);
 }

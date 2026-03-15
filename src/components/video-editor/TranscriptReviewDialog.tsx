@@ -1,4 +1,5 @@
 import type { TranscriptSanityWarning, TranscriptSegment } from "@shared/ai";
+import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,6 +80,28 @@ export function TranscriptReviewDialog({
 
 	function removeDraftSegment(id: string) {
 		setDraftSegments((current) => current.filter((segment) => segment.id !== id));
+	}
+
+	function addDraftSegment() {
+		const last = draftSegments[draftSegments.length - 1];
+		const lastEndMs = last ? (parseTranscriptTimestamp(last.end) ?? 0) : 0;
+		const newStartMs = lastEndMs + 500;
+		const newEndMs = newStartMs + 3000;
+		const newId = `manual-${Date.now()}`;
+		setDraftSegments((current) => [
+			...current,
+			{
+				id: newId,
+				start: formatTimestampForEdit(newStartMs),
+				end: formatTimestampForEdit(newEndMs),
+				text: "",
+				speaker: "",
+			},
+		]);
+		// Scroll new segment into view after render
+		setTimeout(() => {
+			document.getElementById(`${newId}-text`)?.focus();
+		}, 50);
 	}
 
 	function handleSave() {
@@ -218,6 +241,15 @@ export function TranscriptReviewDialog({
 							</div>
 						))}
 					</div>
+
+					<button
+						type="button"
+						onClick={addDraftSegment}
+						className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 py-2.5 text-xs text-slate-400 transition-colors hover:border-white/30 hover:text-slate-200"
+					>
+						<Plus className="h-3.5 w-3.5" />
+						Add caption segment
+					</button>
 
 					{validationError && (
 						<div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
