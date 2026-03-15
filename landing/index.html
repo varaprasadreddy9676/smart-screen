@@ -157,6 +157,7 @@
       color: var(--text);
       font-weight: 600;
       font-size: 14px;
+      white-space: nowrap;
     }
 
     .nav-icon {
@@ -297,6 +298,7 @@
 
     .hero-download-picks {
       display: inline-flex;
+      flex-wrap: wrap;
       gap: 8px;
       padding: 6px;
       border-radius: 14px;
@@ -304,6 +306,7 @@
       background: rgba(255,255,255,0.04);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
+      max-width: 100%;
     }
 
     .hero-pick {
@@ -1031,16 +1034,80 @@
       .feat-inner,
       .feat-inner.flip { grid-template-columns: 1fr; direction: ltr; }
       .feat-inner.flip .feat-img { order: -1; }
+      .feat-block     { padding: 72px 28px; }
       .steps          { grid-template-columns: 1fr 1fr; }
       .modes-grid     { grid-template-columns: 1fr; }
       .gallery-grid   { grid-template-columns: 1fr; }
       .tech-inner     { grid-template-columns: 1fr; }
+      #hero           { padding: 80px 28px 64px; }
+      #problem, #how, #modes, #gallery, #demo, #tech { padding: 72px 28px; }
+      #proof          { padding: 0 28px; }
     }
+
     @media (max-width: 640px) {
+      .wrap           { padding: 0 18px; }
+      nav             { padding: 0 18px; }
+      .nav-a          { display: none; }
+      #hero           { padding: 64px 18px 52px; }
+      .hero-desc      { font-size: 15px; }
+      .hero-download-picks { flex-wrap: wrap; }
+      .hero-pick      { min-width: calc(50% - 6px); flex: 1 1 calc(50% - 6px); }
       .steps          { grid-template-columns: 1fr; }
       .proof-inner    { grid-template-columns: repeat(2, 1fr); }
       .hero-ctas      { flex-direction: column; }
+      .hero-ctas .btn-p,
+      .hero-ctas .btn-o { width: 100%; justify-content: center; }
+      .tech-stats     { grid-template-columns: 1fr 1fr; }
+      .feat-block     { padding: 56px 18px; }
+      .feat-inner     { gap: 40px; }
+      #problem, #how, #modes, #gallery, #demo, #tech { padding: 56px 18px; }
+      #proof          { padding: 0 18px; }
+      .how-hd, .modes-hd, .gallery-hd, .demo-hd { margin-bottom: 36px; }
+      .steps          { border-radius: var(--r); }
+      .footer-inner   { flex-direction: column; gap: 20px; }
+      .footer-links   { flex-wrap: wrap; gap: 14px; }
+    }
+
+    @media (max-width: 480px) {
+      nav             { padding: 0 14px; height: 52px; }
+      .nav-gh         { padding: 6px 11px; font-size: 12px; }
+      #hero           { padding: 52px 14px 44px; }
+      .hero-eyebrow   { font-size: 11px; padding: 4px 11px 4px 8px; }
+      .hero-desc      { font-size: 14px; margin-bottom: 28px; }
+      .hero-download-picks { gap: 6px; padding: 5px; }
+      .hero-pick      { min-width: calc(50% - 5px); padding: 7px 10px; font-size: 10px; }
+      .hero-pick strong { font-size: 11px; }
+      .hero-chips     { gap: 8px; }
+      .chip           { font-size: 11px; }
+      .proof-inner    { grid-template-columns: repeat(2, 1fr); }
+      .proof-n        { font-size: 22px; }
+      .proof-item     { padding: 20px 14px; }
+      .feat-block     { padding: 44px 14px; }
+      .feat-inner     { gap: 32px; }
+      .feat-p         { font-size: 14px; }
+      .pills          { gap: 6px; }
+      .pill           { font-size: 10px; padding: 3px 9px; }
+      .step           { padding: 26px 20px; }
+      .step-num       { font-size: 32px; margin-bottom: 16px; }
+      .mode-card      { padding: 24px 20px; }
+      .tech-stats     { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .stat-card      { padding: 14px; }
+      .stat-n         { font-size: 22px; }
+      .code-body      { font-size: 11.5px; line-height: 1.9; padding: 16px; }
+      .vid-shell      { border-radius: var(--r); }
+      #problem, #how, #modes, #gallery, #demo, #tech { padding: 44px 14px; }
+      #proof          { padding: 0 14px; }
+      .how-hd, .modes-hd, .gallery-hd, .demo-hd { margin-bottom: 28px; }
+      footer          { padding: 32px 14px; }
+      .footer-links   { gap: 12px; }
+      .footer-link    { font-size: 12px; }
+    }
+
+    @media (max-width: 360px) {
+      .hero-pick      { min-width: 100%; }
+      .proof-inner    { grid-template-columns: 1fr 1fr; }
       .tech-stats     { grid-template-columns: 1fr; }
+      .nav-gh span    { display: none; }
     }
   </style>
 </head>
