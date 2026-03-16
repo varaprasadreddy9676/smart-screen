@@ -3,10 +3,6 @@ name: Deploy Landing Page
 on:
   push:
     branches: [main]
-    paths:
-      - "landing/**"
-      - "public/**"
-      - ".github/workflows/deploy-landing.yml"
   workflow_dispatch:
 
 permissions:
